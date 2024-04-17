@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "ms-vscode-remote.remote-containers",
+        "usernamehw.errorlens",
+        "ms-vscode-remote.vscode-remote-extensionpack",
+        "oderwat.indent-rainbow",
+        "streetsidesoftware.code-spell-checker",
+        "VisualStudioExptTeam.vscodeintellicode",
+        "donjayamanne.python-extension-pack"
+    ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "asu",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "poetry shell"
+}

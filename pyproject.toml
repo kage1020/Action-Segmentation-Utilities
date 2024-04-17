@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "asu"
+version = "0.1.0"
+description = "Utilities for action segmentation tasks"
+authors = ["Yuki Hirai <4624528@ed.tus.ac.jp>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.2.2"
+torchvision = "^0.17.2"
+numpy = "^1.26.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
