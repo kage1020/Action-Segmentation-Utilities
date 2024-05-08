@@ -26,3 +26,16 @@ This repository is configured to run on Docker with Dev Containers. To run this 
 1. Install Docker on your machine.
 2. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension on Visual Studio Code.
 3. Open this repository on Visual Studio Code as a Dev Container.
+
+## How to Use
+
+Put this repository in your project root directory, and import the required classes.
+
+```python
+from evaluator import Evaluator
+from extractor import Extractor
+from loader import Loader
+from models import ASFormer
+from processor import AnnotationProcessor
+from visualizer import Visualizer
+```

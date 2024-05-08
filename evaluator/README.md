@@ -2,6 +2,29 @@
 
 This module provides the evaluation tools for action segmentation.
 
+## How to Use
+
+Put this directory in your project root directory, and import the `Evaluator` class.
+
+```python
+from evaluator import Evaluator
+
+evaluator = Evaluator()
+
+for data, gt in dataloader:
+    pred = model(data)
+    evaluator.add(gt, pred)
+    metrics = evaluator.get()
+```
+
+if you want to use this class from same directory, you can import like this:
+
+```python
+from main import Evaluator
+```
+
+You can rename `main.py` to any name you want, but don't forget to change the import statement.
+
 ## Metrics
 
 In these metrics, we define ground truth as $y$, prediction as $\hat{y}$, frame count as $N$, class List $C$. Then, we define the following terms:
