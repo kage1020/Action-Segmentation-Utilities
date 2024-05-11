@@ -1,0 +1,1 @@
+base action_start,cut_lettuce,peel_cucumber,cut_cucumber,cut_cheese,cut_tomato,place_cheese_into_bowl,place_cucumber_into_bowl,place_tomato_into_bowl,place_lettuce_into_bowl,mix_ingredients,add_salt,add_pepper,add_vinegar,add_dressing,add_oil,mix_dressing,serve_salad_onto_plate,action_end

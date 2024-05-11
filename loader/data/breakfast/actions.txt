@@ -1,0 +1,9 @@
+cereals take_bowl,pour_milk,pour_cereals,stir_cereals
+coffee take_cup,pour_coffee,spoon_sugar,pour_sugar,pour_milk,stir_coffee
+friedegg take_plate,take_eggs,pour_oil,butter_pan,crack_egg,fry_egg,add_saltnpepper,put_egg2plate
+milk take_cup,pour_milk,spoon_powder,stir_milk
+pancake take_bowl,take_plate,take_eggs,crack_egg,pour_milk,spoon_flour,pour_flour,stir_dough,pour_oil,butter_pan,pour_dough2pan,fry_pancake,put_pancake2plate
+salat take_bowl,take_plate,take_knife,peel_fruit,cut_fruit,put_fruit2bowl,stir_fruit
+sandwich take_plate,take_knife,cut_bun,smear_butter,take_topping,put_toppingOnTop,put_bunTogether
+scrambledegg take_bowl,take_plate,take_eggs,crack_egg,stir_egg,pour_oil,butter_pan,pour_egg2pan,stirfry_egg,add_saltnpepper,put_egg2plate
+tea take_cup,pour_water,add_teabag,spoon_sugar,pour_sugar,stir_tea
