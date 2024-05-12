@@ -108,3 +108,7 @@ class VideoWriter:
             self.out = self.openpipe((out_width, out_height), pix_fmt_in=pix_fmt)
 
         self.write(out_image)
+
+    # add public exit method
+    def close(self):
+        self.__exit__(None, None, None)

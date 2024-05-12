@@ -30,8 +30,6 @@ This module provides the visualization tools for action segmentation.
 
 - Make video with action segments bar and labels
 
-![](docs/video.gif)
-
 ## Acknowledgements
 
 This module contains Yota Yamamoto's code for making video. Thanks to Yota Yamamoto.
