@@ -38,25 +38,26 @@ class Visualizer:
             return image
 
     @staticmethod
-    def to_np(x: list | np.ndarray | torch.Tensor) -> np.ndarray:
+    def to_np(x: list | np.ndarray | torch.Tensor, mapping: dict[str, int] | None = None) -> np.ndarray:
         if isinstance(x, torch.Tensor):
-            return x.detach().cpu().numpy()
+            return x.detach().cpu().numpy(), mapping
         if isinstance(x, np.ndarray):
-            return x
+            return x, mapping
         if isinstance(x, list):
             if len(x) > 0 and isinstance(x[0], str):
-                x, _ = Visualizer.str_to_int(x)
-                return np.array(x)
-            return np.array(x)
+                x, _mapping = Visualizer.str_to_int(x, mapping)
+                return np.array(x), _mapping
+            return np.array(x), mapping
         raise ValueError("Invalid input type")
 
     @staticmethod
     def to_segments(
-        x: list | np.ndarray | torch.Tensor,
-        backgrounds: list | np.ndarray | torch.Tensor
+        x: list[str] | np.ndarray | torch.Tensor,
+        backgrounds: list[str] | np.ndarray | torch.Tensor,
+        mapping: dict[str, int] | None = None
     ) -> list[int, tuple[int, int]]:
-        _x = Visualizer.to_np(x)
-        _backgrounds = Visualizer.to_np(backgrounds)
+        _x, _mapping = Visualizer.to_np(x, mapping)
+        _backgrounds, _mapping = Visualizer.to_np(backgrounds, mapping)
         diff = np.diff(_x, prepend=-1)
         indices = np.where(diff != 0)[0]
         segments = []
@@ -68,15 +69,37 @@ class Visualizer:
             end = indices[i + 1] if i + 1 < len(indices) else len(x)
             segments.append((x[start], (start, end)))
 
-        return segments
+        return segments, _mapping
 
     @staticmethod
-    def str_to_int(x: list[str]):
-        mapping = dict()
+    def str_to_int(x: list[str], mapping: dict[str, int] | None = dict()):
+        _mapping = mapping.copy()
         for s in x:
-            if s not in mapping:
-                mapping[s] = len(mapping)
-        return [mapping[s] for s in x], mapping
+            if s not in _mapping:
+                _mapping[s] = len(_mapping)
+        return [_mapping[s] for s in x], _mapping
+
+    @staticmethod
+    def get_mapping(file_path: str, has_header: bool = False):
+        '''
+        Get the mapping of classes to integers
+
+        Mapping file format should be:
+        class1 0
+        class2 1
+        ...
+        '''
+        with open(file_path, "r") as f:
+            lines = f.readlines()
+            if has_header:
+                lines = lines[1:]
+        text_to_int = {}
+        int_to_text = {}
+        for line in lines:
+            text, num = line.strip().split()
+            text_to_int[text] = int(num)
+            int_to_text[int(num)] = text
+        return text_to_int, int_to_text
 
     @staticmethod
     def plot_feature(feature: np.ndarray, file_path: str = "feature.png"):
@@ -149,6 +172,7 @@ class Visualizer:
         gt: list[str] | np.ndarray | torch.Tensor | None = None,
         confidences: list[float] | None = None,
         file_path: str = "action_segmentation.png",
+        mapping: dict[str, int] | None = dict(),
         backgrounds: list[str] | np.ndarray | torch.Tensor = [],
         num_classes: int = 50,
         axis: bool = True
@@ -156,29 +180,30 @@ class Visualizer:
         assert pred is not None or gt is not None, 'Either `pred` or `gt` must be provided'
 
         if pred is not None and gt is None:
-            _pred = Visualizer.to_np(pred)
-            pred_segments = Visualizer.to_segments(_pred, backgrounds)
+            _pred, mapping = Visualizer.to_np(pred, mapping)
+            pred_segments, mapping = Visualizer.to_segments(_pred, backgrounds, mapping)
             max_len = len(pred_segments)
             acc = [0]
             fig_size = (10, 2)
         elif pred is None and gt is not None:
-            _gt = Visualizer.to_np(gt)
-            gt_segments = Visualizer.to_segments(_gt, backgrounds)
+            _gt, mapping = Visualizer.to_np(gt, mapping)
+            gt_segments, mapping = Visualizer.to_segments(_gt, backgrounds, mapping)
             max_len = len(gt_segments)
             acc = [0]
             fig_size = (10, 2)
         elif pred is not None and gt is not None:
-            _pred = Visualizer.to_np(pred)
-            _gt = Visualizer.to_np(gt)
-            pred_segments = Visualizer.to_segments(_pred, backgrounds)
-            gt_segments = Visualizer.to_segments(_gt, backgrounds)
+            _pred, mapping = Visualizer.to_np(pred, mapping)
+            _gt, mapping = Visualizer.to_np(gt, mapping)
+            pred_segments, mapping = Visualizer.to_segments(_pred, backgrounds, mapping)
+            gt_segments, mapping = Visualizer.to_segments(_gt, backgrounds, mapping)
             max_len = max(len(pred_segments), len(gt_segments))
+            pred_segments += [(0, (0, 0))] * (max_len - len(pred_segments))
             gt_segments += [(0, (0, 0))] * (max_len - len(gt_segments))
             acc = [0, 0]
             fig_size = (10, 3)
 
         if confidences is not None:
-            _confidences = Visualizer.to_np(confidences)
+            _confidences = Visualizer.to_np(confidences)[0]
             fig_size = (10, 4)
 
         fig = plt.figure(figsize=fig_size)
@@ -243,6 +268,7 @@ class Visualizer:
         video_path: str | None = None,
         file_path: str = "action_segmentation.mp4",
         backgrounds: list[str] | np.ndarray | torch.Tensor = [],
+        mapping: dict[str, int] | None = dict(),
         num_classes: int = 50,
         show_label: bool = True
     ):
@@ -263,15 +289,16 @@ class Visualizer:
         video_size = [img_w, img_h]
 
         if pred is not None:
-            _pred = Visualizer.to_np(pred)
+            _pred, mapping = Visualizer.to_np(pred, mapping)
         if gt is not None:
-            _gt = Visualizer.to_np(gt)
+            _gt, mapping = Visualizer.to_np(gt, mapping)
         seg_canvas = Visualizer.plot_action_segmentation(
             pred=_pred,
             gt=_gt,
             confidences=confidences,
             backgrounds=backgrounds,
             num_classes=num_classes,
+            mapping=mapping,
             axis=False
         )
         seg_h, _, _ = seg_canvas.shape
@@ -349,12 +376,15 @@ class Visualizer:
 
                 writer.update(image)
 
-    def init(self, file_path: str):
+    def init(self, file_path: str = None, mapping_path: str = None, has_header: bool = False):
         file = Path(file_path)
         if file.suffix == ".mp4":
             self.writer = VideoWriter(filename=file.stem + '_tmp.mp4')
         else:
             self.file_path = file_path
+
+        if mapping_path is not None:
+            self.mapping, self.int_to_text = Visualizer.get_mapping(mapping_path, has_header)
 
     def close(self):
         self.writer.close()
@@ -362,8 +392,8 @@ class Visualizer:
     def segment(
         self,
         pred: list[str] | np.ndarray | torch.Tensor,
-        gt: list[str] | np.ndarray | torch.Tensor = [],
-        confidences: list[float] = [],
+        gt: list[str] | np.ndarray | torch.Tensor = None,
+        confidences: list[float] = None,
         file_path: str | None = "action_segmentation.png",
     ):
         output_path = file_path if self.file_path is None else self.file_path
@@ -373,7 +403,8 @@ class Visualizer:
             confidences=confidences,
             file_path=output_path,
             num_classes=self.num_classes,
-            backgrounds=self.backgrounds
+            backgrounds=self.backgrounds,
+            mapping=self.mapping if self.mapping is not None else dict()
         )
 
     def add(self, image: np.ndarray):
@@ -388,12 +419,13 @@ class Visualizer:
         gt: list[str] | np.ndarray | torch.Tensor = None,
         confidences: list[float] = None,
     ):
+        mapping = dict() if self.mapping is None else self.mapping
         if pred is not None:
-            self.pred = Visualizer.to_np(pred)
+            self.pred, mapping = Visualizer.to_np(pred, mapping)
         if gt is not None:
-            self.gt = Visualizer.to_np(gt)
+            self.gt, mapping = Visualizer.to_np(gt, mapping)
         if confidences is not None:
-            self.confidences = Visualizer.to_np(confidences)
+            self.confidences = Visualizer.to_np(confidences)[0]
 
         self.writer.close()
         video_path = self.writer.filename.replace('_tmp.mp4', '.mp4')
