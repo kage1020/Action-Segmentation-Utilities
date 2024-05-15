@@ -11,6 +11,8 @@
         "Inconv",
         "libx",
         "logit",
+        "mlflow",
+        "omegaconf",
         "outconv",
         "probs",
         "relu",
