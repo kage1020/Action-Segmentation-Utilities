@@ -1,5 +1,5 @@
 import numpy as np
-import torch
+from torch import Tensor
 
 
 class Evaluator:
@@ -25,8 +25,8 @@ class Evaluator:
         self.fns = [0] * len(taus)
 
     @staticmethod
-    def to_np(x: list | np.ndarray | torch.Tensor) -> np.ndarray:
-        if isinstance(x, torch.Tensor):
+    def to_np(x: list | np.ndarray | Tensor) -> np.ndarray:
+        if isinstance(x, Tensor):
             return x.detach().cpu().numpy()
         if isinstance(x, np.ndarray):
             return x
@@ -36,8 +36,8 @@ class Evaluator:
 
     @staticmethod
     def to_segments(
-        x: list | np.ndarray | torch.Tensor,
-        backgrounds: list | np.ndarray | torch.Tensor
+        x: list | np.ndarray | Tensor,
+        backgrounds: list | np.ndarray | Tensor
     ) -> list:
         _x = Evaluator.to_np(x)
         _backgrounds = Evaluator.to_np(backgrounds)
@@ -56,8 +56,8 @@ class Evaluator:
 
     @staticmethod
     def accuracy_frame(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor
     ) -> float:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -65,8 +65,8 @@ class Evaluator:
 
     @staticmethod
     def accuracy_class(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor
     ) -> list[float]:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -80,8 +80,8 @@ class Evaluator:
 
     @staticmethod
     def levenshtein(
-        x: list | np.ndarray | torch.Tensor,
-        y: list | np.ndarray | torch.Tensor
+        x: list | np.ndarray | Tensor,
+        y: list | np.ndarray | Tensor
     ) -> int:
         n = len(x)
         m = len(y)
@@ -101,9 +101,9 @@ class Evaluator:
 
     @staticmethod
     def edit_score(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
-        backgrounds: list | np.ndarray | torch.Tensor
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
+        backgrounds: list | np.ndarray | Tensor
     ) -> float:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -123,10 +123,10 @@ class Evaluator:
 
     @staticmethod
     def tp_fp_fn(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | torch.Tensor
+        backgrounds: list | np.ndarray | Tensor
     ) -> tuple[int, int, int]:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -150,30 +150,30 @@ class Evaluator:
 
     @staticmethod
     def precision(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | torch.Tensor
+        backgrounds: list | np.ndarray | Tensor
     ) -> float:
         tp, fp, _ = Evaluator.tp_fp_fn(gt, pred, tau, backgrounds)
         return tp / (tp + fp) if tp + fp > 0 else 0.0
 
     @staticmethod
     def recall(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | torch.Tensor
+        backgrounds: list | np.ndarray | Tensor
     ) -> float:
         tp, _, fn = Evaluator.tp_fp_fn(gt, pred, tau, backgrounds)
         return tp / (tp + fn) if tp + fn > 0 else 0.0
 
     @staticmethod
     def f1(
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | torch.Tensor
+        backgrounds: list | np.ndarray | Tensor
     ) -> float:
         p = Evaluator.precision(gt, pred, tau, backgrounds)
         r = Evaluator.recall(gt, pred, tau, backgrounds)
@@ -181,9 +181,9 @@ class Evaluator:
 
     def add(
         self,
-        gt: list | np.ndarray | torch.Tensor,
-        pred: list | np.ndarray | torch.Tensor,
-        backgrounds: list | np.ndarray | torch.Tensor
+        gt: list | np.ndarray | Tensor,
+        pred: list | np.ndarray | Tensor,
+        backgrounds: list | np.ndarray | Tensor
     ) -> None:
         self.num_videos += 1
         self.num_total_frames += len(gt)

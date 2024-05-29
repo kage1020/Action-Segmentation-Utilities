@@ -7,14 +7,14 @@ from matplotlib.axes import Axes
 import matplotlib.cm as cm
 import cv2
 import numpy as np
-import torch
+from torch import Tensor
 from visualizer.writer import VideoWriter
 
 
 class Visualizer:
     def __init__(
         self,
-        backgrounds: list[str] | np.ndarray | torch.Tensor = [],
+        backgrounds: list[str] | np.ndarray | Tensor = [],
         num_classes: int = 50
     ):
         self.backgrounds = backgrounds
@@ -38,8 +38,8 @@ class Visualizer:
             return image
 
     @staticmethod
-    def to_np(x: list | np.ndarray | torch.Tensor, mapping: dict[str, int] | None = None) -> np.ndarray:
-        if isinstance(x, torch.Tensor):
+    def to_np(x: list | np.ndarray | Tensor, mapping: dict[str, int] | None = None) -> np.ndarray:
+        if isinstance(x, Tensor):
             return x.detach().cpu().numpy(), mapping
         if isinstance(x, np.ndarray):
             return x, mapping
@@ -52,8 +52,8 @@ class Visualizer:
 
     @staticmethod
     def to_segments(
-        x: list[str] | np.ndarray | torch.Tensor,
-        backgrounds: list[str] | np.ndarray | torch.Tensor,
+        x: list[str] | np.ndarray | Tensor,
+        backgrounds: list[str] | np.ndarray | Tensor,
         mapping: dict[str, int] | None = None
     ) -> list[int, tuple[int, int]]:
         _x, _mapping = Visualizer.to_np(x, mapping)
@@ -103,7 +103,7 @@ class Visualizer:
 
     @staticmethod
     def plot_feature(feature: np.ndarray, file_path: str = "feature.png"):
-        assert isinstance(feature, np.ndarray) or isinstance(feature, torch.Tensor), 'Feature must be a numpy array or a torch tensor'
+        assert isinstance(feature, np.ndarray) or isinstance(feature, Tensor), 'Feature must be a numpy array or a torch tensor'
         assert len(feature.shape) == 2, 'Feature must be a 2D array'
 
         fig = plt.figure()
@@ -168,12 +168,12 @@ class Visualizer:
 
     @staticmethod
     def plot_action_segmentation(
-        pred: list[str] | np.ndarray | torch.Tensor | None = None,
-        gt: list[str] | np.ndarray | torch.Tensor | None = None,
+        pred: list[str] | np.ndarray | Tensor | None = None,
+        gt: list[str] | np.ndarray | Tensor | None = None,
         confidences: list[float] | None = None,
         file_path: str = "action_segmentation.png",
         mapping: dict[str, int] | None = dict(),
-        backgrounds: list[str] | np.ndarray | torch.Tensor = [],
+        backgrounds: list[str] | np.ndarray | Tensor = [],
         num_classes: int = 50,
         axis: bool = True
     ):
@@ -260,14 +260,14 @@ class Visualizer:
 
     @staticmethod
     def make_video(
-        pred: list[str] | np.ndarray | torch.Tensor | None = None,
-        gt: list[str] | np.ndarray | torch.Tensor | None = None,
+        pred: list[str] | np.ndarray | Tensor | None = None,
+        gt: list[str] | np.ndarray | Tensor | None = None,
         confidences: list[float] | None = None,
         image_dir: str | None = None,
         images: list[str] | list[np.ndarray] | None = None,
         video_path: str | None = None,
         file_path: str = "action_segmentation.mp4",
-        backgrounds: list[str] | np.ndarray | torch.Tensor = [],
+        backgrounds: list[str] | np.ndarray | Tensor = [],
         mapping: dict[str, int] | None = dict(),
         num_classes: int = 50,
         show_label: bool = True
@@ -391,8 +391,8 @@ class Visualizer:
 
     def segment(
         self,
-        pred: list[str] | np.ndarray | torch.Tensor,
-        gt: list[str] | np.ndarray | torch.Tensor = None,
+        pred: list[str] | np.ndarray | Tensor,
+        gt: list[str] | np.ndarray | Tensor = None,
         confidences: list[float] = None,
         file_path: str | None = "action_segmentation.png",
     ):
@@ -415,8 +415,8 @@ class Visualizer:
 
     def video(
         self,
-        pred: list[str] | np.ndarray | torch.Tensor | None = None,
-        gt: list[str] | np.ndarray | torch.Tensor = None,
+        pred: list[str] | np.ndarray | Tensor | None = None,
+        gt: list[str] | np.ndarray | Tensor = None,
         confidences: list[float] = None,
     ):
         mapping = dict() if self.mapping is None else self.mapping
