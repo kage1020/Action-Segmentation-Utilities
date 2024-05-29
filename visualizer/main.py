@@ -63,11 +63,11 @@ class Visualizer:
         segments = []
 
         for i in range(len(indices)):
-            if x[indices[i]] in _backgrounds:
+            if _x[indices[i]] in _backgrounds:
                 continue
             start = indices[i]
-            end = indices[i + 1] if i + 1 < len(indices) else len(x)
-            segments.append((x[start], (start, end)))
+            end = indices[i + 1] if i + 1 < len(indices) else len(_x)
+            segments.append((_x[start], (start, end)))
 
         return segments, _mapping
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Utilities for action segmentation tasks"
 authors = ["Yuki Hirai <4624528@ed.tus.ac.jp>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
