@@ -8,7 +8,8 @@ import matplotlib.cm as cm
 import cv2
 import numpy as np
 from torch import Tensor
-from visualizer.writer import VideoWriter
+from .writer import VideoWriter
+from .palette import template
 
 
 class Visualizer:
@@ -175,6 +176,7 @@ class Visualizer:
         mapping: dict[str, int] | None = dict(),
         backgrounds: list[str] | np.ndarray | Tensor = [],
         num_classes: int = 50,
+        palette: list[tuple[float]] | None = None,
         axis: bool = True
     ):
         assert pred is not None or gt is not None, 'Either `pred` or `gt` must be provided'
@@ -213,22 +215,22 @@ class Visualizer:
             bar_ax: Axes = fig.add_axes([0.05, 0.15, 0.94, 0.8])
         else:
             bar_ax: Axes = fig.add_axes([0.06, 0.15+0.8/3, 0.92, 0.8/3*2])
+
+        if palette is None:
+            palette = template(num_classes, 'cividis')
+
         for i in range(max_len):
             if pred is not None and gt is None:
-                pred_color = cm.jet(pred_segments[i][0] / num_classes)
-                bar_ax.barh("pred", pred_segments[i][1][1] - pred_segments[i][1][0], color=pred_color, left=acc)
+                bar_ax.barh("pred", pred_segments[i][1][1] - pred_segments[i][1][0], color=palette[pred_segments[i][0]], left=acc)
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
             elif pred is None and gt is not None:
-                gt_color = cm.jet(gt_segments[i][0] / num_classes)
-                bar_ax.barh("GT", gt_segments[i][1][1] - gt_segments[i][1][0], color=gt_color, left=acc)
+                bar_ax.barh("GT", gt_segments[i][1][1] - gt_segments[i][1][0], color=palette[gt_segments[i][0]], left=acc)
                 acc[0] += gt_segments[i][1][1] - gt_segments[i][1][0]
             elif pred is not None and gt is not None:
-                pred_color = cm.jet(pred_segments[i][0] / num_classes)
-                gt_color = cm.jet(gt_segments[i][0] / num_classes)
                 bar_ax.barh(
                     ['Pred', 'GT'],
                     [pred_segments[i][1][1] - pred_segments[i][1][0], gt_segments[i][1][1] - gt_segments[i][1][0]],
-                    color=[pred_color, gt_color],
+                    color=[palette[pred_segments[i][0]], palette[gt_segments[i][0]]],
                     left=acc
                 )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]

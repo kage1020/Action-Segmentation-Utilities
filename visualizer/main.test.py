@@ -1,4 +1,4 @@
-from visualizer.main import Visualizer
+from .main import Visualizer
 import unittest
 import numpy as np
 import torch

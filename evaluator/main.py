@@ -194,7 +194,7 @@ class Evaluator:
         self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
         self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
 
-    def get(self):
+    def get(self) -> tuple[float, float, list[float]]:
         acc = self.num_correct_frames / self.num_total_frames * 100
         edit = self.edit_distances / self.num_videos
         precision = [self.tps[i] / (self.tps[i] + self.fps[i]) if self.tps[i] + self.fps[i] > 0 else 0.0 for i in range(len(self.tps))]
@@ -202,7 +202,7 @@ class Evaluator:
         f1 = [2 * precision[i] * recall[i] / (precision[i] + recall[i]) if precision[i] + recall[i] > 0 else 0.0 for i in range(len(precision))]
         return acc, edit, f1
 
-    def reset(self):
+    def reset(self) -> None:
         self.num_videos = 0
         self.num_total_frames = 0
         self.num_correct_frames = 0

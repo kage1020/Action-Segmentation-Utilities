@@ -2,9 +2,10 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
 
 
-def upsize(x: torch.Tensor, size: int):
+def upsize(x: Tensor, size: int):
     return F.upsize(x, size=size, mode="linear", align_corners=True)
 
 
@@ -20,7 +21,7 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.conv(x)
         return x
 
@@ -30,7 +31,7 @@ class InConv(nn.Module):
         super(InConv, self).__init__()
         self.conv = DoubleConv(in_channels, out_channels)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.conv(x)
         return x
 
@@ -40,7 +41,7 @@ class OutConv(nn.Module):
         super(OutConv, self).__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size=1)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.conv(x)
         return x
 
@@ -53,7 +54,7 @@ class Down(nn.Module):
             DoubleConv(in_channels, out_channels),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         x = self.max_pool_conv(x)
         return x
 
@@ -67,7 +68,7 @@ class Up(nn.Module):
             self.up = nn.ConvTranspose1d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)
         self.conv = DoubleConv(in_channels, out_channels)
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor):
+    def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
         x1 = self.up(x1)
         diff = torch.tensor([x2.size()[2] - x1.size()[2]])
 
@@ -86,11 +87,11 @@ class SPPBlock(nn.Module):
         self.pool4 = nn.MaxPool1d(kernel_size=6, stride=6)
         self.conv = nn.Conv1d(in_channels, 1, kernel_size=1, padding=0)
 
-    def _layer(self, x: torch.Tensor, pool: nn.Module):
+    def _layer(self, x: Tensor, pool: nn.Module):
         x = F.upsample(pool(x), size=x.size(2), mode="linear", align_corners=True)
         return x
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: Tensor) -> Tensor:
         layer1 = self._layer(x, self.pool1)
         layer2 = self._layer(x, self.pool2)
         layer3 = self._layer(x, self.pool3)
@@ -141,7 +142,7 @@ class C2F_TCN(nn.Module):
         self.proj5 = OutConv(128, num_features)
         self.spp = SPPBlock(128)
 
-    def ensemble(self, y: list[torch.Tensor]):
+    def ensemble(self, y: list[Tensor]) -> Tensor:
         ensemble_weights = [1, 1, 1, 1, 1, 1]
         num_videos = y[0].shape[-1]
         ensemble_prob = F.softmax(y[0], dim=1) * ensemble_weights[0] / sum(ensemble_weights)
@@ -152,7 +153,7 @@ class C2F_TCN(nn.Module):
 
         return torch.log(ensemble_prob + 1e-8)
 
-    def forward(self, x: torch.Tensor, weights: torch.Tensor):
+    def forward(self, x: Tensor, weights: Tensor) -> tuple[Tensor, Tensor]:
         x1 = self.inconv(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)

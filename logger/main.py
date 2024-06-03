@@ -1,5 +1,8 @@
 import logging
+from dataclasses import dataclass
 
+
+@dataclass(frozen=True)
 class Color:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'

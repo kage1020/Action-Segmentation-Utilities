@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torch import Tensor
 import math
 from copy import deepcopy
 
@@ -22,7 +22,7 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0).permute(0, 2, 1)
         self.pe = nn.Parameter(pe, requires_grad=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         '''
         Parameters:
             x: (batch size, feature map dimension, number of frames)
@@ -48,7 +48,7 @@ class ConvFeedForward(nn.Module):
             nn.ReLU(),
         )
 
-    def forward(self, x) -> torch.Tensor:
+    def forward(self, x) -> Tensor:
         '''
         Parameters:
             x: (batch size, feature map dimension, number of frames)
@@ -74,7 +74,7 @@ class FCFeedForward(nn.Module):
             nn.Conv1d(out_channels, out_channels, 1),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         '''
         Parameters:
             x: (batch size, feature map dimension, number of frames)
@@ -134,13 +134,7 @@ class AttentionLayer(nn.Module):
             window_mask[:, i, i:i+self.dilation] = 1
         return window_mask
 
-    def _normal_att(
-        self,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        mask: torch.Tensor
-    ) -> torch.Tensor:
+    def _normal_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             q: (batch size, feature dimension, number of frames)
@@ -157,13 +151,7 @@ class AttentionLayer(nn.Module):
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
-    def _block_wise_att(
-        self,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        mask: torch.Tensor
-    ) -> torch.Tensor:
+    def _block_wise_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             q: (batch size, feature dimension, number of frames)
@@ -196,13 +184,7 @@ class AttentionLayer(nn.Module):
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
-    def _sliding_window_att(
-        self,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        mask: torch.Tensor
-    ) -> torch.Tensor:
+    def _sliding_window_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             q: (batch size, feature dimension, number of frames)
@@ -247,12 +229,7 @@ class AttentionLayer(nn.Module):
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
-    def forward(
-        self,
-        x1: torch.Tensor,
-        x2: torch.Tensor | None,
-        mask: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, x1: Tensor, x2: Tensor | None, mask: Tensor) -> Tensor:
         '''
         Parameters:
             x1: (batch size, feature map dimension, number of frames)
@@ -277,13 +254,7 @@ class AttentionLayer(nn.Module):
         elif self.att_type == 'sliding_att':
             return self._sliding_window_att(query, key, value, mask)
 
-    def dot(
-        self,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        mask: torch.Tensor
-    ) -> torch.Tensor:
+    def dot(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             q: (feature dimension, feature map dimension, feature dimension)
@@ -348,7 +319,7 @@ class MultiHeadAttentionLayer(nn.Module):
         self.stage = stage
         self.att_type = att_type
 
-    def forward(self, x1: torch.Tensor, x2: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x1: Tensor, x2: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             x1: (batch size, feature map dimension, number of frames)
@@ -395,7 +366,7 @@ class AttentionModule(nn.Module):
         self.dilation = dilation
         self.stage = stage
 
-    def forward(self, x: torch.Tensor, f: torch.Tensor | None, mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor, f: Tensor | None, mask: Tensor) -> Tensor:
         '''
         Parameters:
             x: (batch size, feature map dimension, number of frames)
@@ -406,7 +377,7 @@ class AttentionModule(nn.Module):
         '''
         # dilation convolution + ReLU
         # out: (batch size, feature map dimension, number of frames)
-        out: torch.Tensor = self.feed_forward(x)
+        out: Tensor = self.feed_forward(x)
 
         # residual connection + self-attention with instance normalization
         # out: (batch size, feature map dimension, number of frames)
@@ -462,7 +433,7 @@ class Encoder(nn.Module):
         self.dropout = nn.Dropout2d(p=channel_masking_rate)
         self.channel_masking_rate = channel_masking_rate
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: Tensor, mask: Tensor) -> tuple[Tensor, Tensor]:
         '''
         Parameters:
             x: (batch size, feature dimension, number of frames)
@@ -478,7 +449,7 @@ class Encoder(nn.Module):
 
         # adjust input dimension
         # feature: (batch size, feature map dimension, number of frames)
-        feature: torch.Tensor = self.conv_1x1(x)
+        feature: Tensor = self.conv_1x1(x)
 
         # encoder block
         # feature: (batch size, feature map dimension, number of frames)
@@ -528,7 +499,7 @@ class Decoder(nn.Module):
         ])
         self.index = index
 
-    def forward(self, x: torch.Tensor, f: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: Tensor, f: Tensor, mask: Tensor) -> tuple[Tensor, Tensor]:
         '''
         Parameters:
             x: (batch size, number of action classes, number of frames)
@@ -537,7 +508,7 @@ class Decoder(nn.Module):
         '''
         # adjust input dimension
         # feature: (batch size, feature map dimension, number of frames)
-        feature: torch.Tensor = self.conv_1x1(x)
+        feature: Tensor = self.conv_1x1(x)
 
         # decoder block
         # feature: (batch size, feature map dimension, number of frames)
@@ -588,7 +559,7 @@ class ASFormer(nn.Module):
             in range(num_decoders)
         ])
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         '''
         Parameters:
             x: (batch size, feature dimension, number of frames)

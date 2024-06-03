@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import unittest
-from main import Evaluator
+from .main import Evaluator
 
 
 class TestEvaluator(unittest.TestCase):

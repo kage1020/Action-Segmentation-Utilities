@@ -14,9 +14,9 @@ COPY pyproject.toml poetry.lock ./
 
 # Install needed packages and python
 RUN apt-get -y update && \
-    apt-get -y install git curl && \
-    apt-get -y install python3 python3-pip python3-venv && \
-    apt-get -y install ffmpeg
+    apt-get -y --fix-missing install git curl && \
+    apt-get -y --fix-missing install python3 python3-pip python3-venv && \
+    apt-get -y --fix-missing install ffmpeg
 RUN echo 'alias python=python3' >> ~/.bashrc && \
     echo 'alias pip=pip3' >> ~/.bashrc && \
     . ~/.bashrc
