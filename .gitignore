@@ -166,3 +166,7 @@ cython_debug/
 
 # video
 *.mp4
+
+# mlflow
+mlruns/
+outputs/

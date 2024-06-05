@@ -3,58 +3,28 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+from torch import Tensor
 import numpy as np
+from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
 class DatasetConfig:
-    dataset: str
-    base_dir: str = "data"
-    backgrounds: list[str] = []
+    device: str = 0
+    action: str = "train"
+
+    dataset: str = "breakfast"
     split: int = 1
+    backgrounds: list[str] = field(default_factory=lambda: [])
+    batch_size: int = 1
+    sampling_rate: int = 1
+    shuffle: bool = True
+    base_dir: str = "data"
     split_dir: str = "splits"
     gt_dir: str = "groundTruth"
     feature_dir: str = "features"
-    pseudo_dir: str = "pseudo"
-    prob_dir: str = "prob"
-    action: str = "train"
-    sampling_rate: int = 1
-    batch_size: int = 1
-    shuffle: bool = False
-    device: str
-    refine_penalty: float = 0.1
-
-    def __init__(
-        self,
-        action: str,
-        dataset: str,
-        split: str,
-        device: str,
-        base_dir: str = "data",
-        backgrounds: list[str] = [],
-        gt_dir: str = "groundTruth",
-        feature_dir: str = "features",
-        split_dir: str = "splits",
-        pseudo_dir: str = "pseudo",
-        prob_dir: str = "prob",
-        sampling_rate: int = 1,
-        batch_size: int = 1,
-        refine_penalty: float = 0.1
-    ):
-        self.action = action
-        self.dataset = dataset
-        self.base_dir = base_dir
-        self.backgrounds = backgrounds
-        self.split = split
-        self.gt_dir = gt_dir
-        self.feature_dir = feature_dir
-        self.split_dir = split_dir
-        self.pseudo_dir = pseudo_dir
-        self.prob_dir = prob_dir
-        self.sampling_rate = sampling_rate
-        self.batch_size = batch_size
-        self.device = device
-        self.shuffle = self.action == "train"
-        refine_penalty = refine_penalty
+    prob_dir: str | None = None
+    pseudo_dir: str | None = None
 
 
 def get_mapping(file_path: str, has_header: bool = False):
@@ -94,7 +64,7 @@ def get_actions(file_path: str, has_header: bool = False):
     actions = {}
     for line in lines:
         action, classes = line.strip().split()
-        actions[action] = list(map(int, classes.split(",")))
+        actions[action] = classes.split(",")
     return actions
 
 def get_matching(file_path: str, has_header: bool = False):
@@ -132,14 +102,15 @@ def remove_backgrounds_in_actions(actions: dict, backgrounds: list[int | str]):
     '''
     _actions = actions.copy()
     for bg in backgrounds:
-        for i, classes in enumerate(_actions.values()):
+        for i, classes in enumerate(actions.values()):
             if bg in classes:
                 _actions[i] = [c for c in classes if c != bg]
     return _actions
 
 
 class BaseDataset(Dataset):
-    cfg: DatasetConfig = None
+    cfg: DatasetConfig
+    train: str
     class_to_int = None
     int_to_class = None
     masked_class_to_int = None
@@ -148,19 +119,21 @@ class BaseDataset(Dataset):
     masked_actions = {}
     videos = []
 
-    def __init__(self):
+    def __init__(self, cfg: DatasetConfig, train: bool = True):
+        self.train = 'train' if train else 'test'
+        self.cfg = cfg
         # load videos
-        with open(f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.split_dir}/{self.cfg.action}.split{self.cfg.split}.bundle", "r") as f:
+        with open(f"{cfg.base_dir}/{cfg.dataset}/{cfg.split_dir}/{self.train}.split{cfg.split}.bundle", "r") as f:
             lines = f.readlines()
             self.videos = [line.strip() for line in lines if line.strip() != ""]
 
-        if self.cfg.action == "train":
-            self.__generate_pseudo_labels()
+        # if self.train == "train":
+        #     self.__generate_pseudo_labels()
 
     def __len__(self):
         return len(self.videos)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         # load features
         video = Path(self.videos[idx])
         video_name = video.stem
@@ -217,7 +190,7 @@ class BaseDataset(Dataset):
                         f.write(f"{self.masked_int_to_class[label.item()]}\n")
                 np.save(f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.prob_dir}/{video.stem}.npy", pseudo_probs.cpu().numpy())
 
-    def __refine_pseudo_labels(self, probs, action):
+    def __refine_pseudo_labels(self, probs: Tensor, action):
         _probs = probs.clone()
         for i in range(len(probs)):
             for j in range(len(probs[i])):
@@ -230,17 +203,16 @@ class BaseDataset(Dataset):
 
 
 class SaladsDataset(BaseDataset):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig()):
-        self.cfg = cfg
-        self.class_to_int, self.int_to_class = get_mapping(f"{self.cfg.base_dir}/{self.cfg.dataset}/mapping.txt")
+    def __init__(self, cfg: DatasetConfig, train: bool = True):
+        self.class_to_int, self.int_to_class = get_mapping(f"{cfg.base_dir}/{cfg.dataset}/mapping.txt")
         self.masked_class_to_int = mask_backgrounds_in_mapping(self.class_to_int, cfg.backgrounds, -1)
         self.masked_int_to_class = mask_backgrounds_in_mapping(self.int_to_class, cfg.backgrounds, "background")
-        super().__init__()
+        super().__init__(cfg, train)
 
 
 class SaladsDataLoader(DataLoader):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig()):
-        dataset = SaladsDataset(cfg)
+    def __init__(self, cfg: DatasetConfig = DatasetConfig(), train: bool = True):
+        dataset = SaladsDataset(cfg, train)
         super(SaladsDataLoader, self).__init__(dataset, batch_size=cfg.batch_size, shuffle=cfg.shuffle)
         self.cfg = cfg
         self.class_to_int = dataset.class_to_int
@@ -250,17 +222,16 @@ class SaladsDataLoader(DataLoader):
 
 
 class GTEADataset(BaseDataset):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"])):
-        self.cfg = cfg
-        self.class_to_int, self.int_to_class = get_mapping(f"{self.cfg.base_dir}/{self.cfg.dataset}/mapping.txt")
+    def __init__(self, cfg: DatasetConfig, train: bool = True):
+        self.class_to_int, self.int_to_class = get_mapping(f"{cfg.base_dir}/{cfg.dataset}/mapping.txt")
         self.masked_class_to_int = mask_backgrounds_in_mapping(self.class_to_int, cfg.backgrounds, -1)
         self.masked_int_to_class = mask_backgrounds_in_mapping(self.int_to_class, cfg.backgrounds, "background")
-        super().__init__()
+        super().__init__(cfg, train)
 
 
 class GTEADataLoader(DataLoader):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"])):
-        dataset = GTEADataset(cfg)
+    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"]), train: bool = True):
+        dataset = GTEADataset(cfg, train)
         super(GTEADataLoader, self).__init__(dataset, batch_size=cfg.batch_size, shuffle=cfg.shuffle)
         self.cfg = cfg
         self.class_to_int = dataset.class_to_int
@@ -270,19 +241,18 @@ class GTEADataLoader(DataLoader):
 
 
 class BreakfastDataset(BaseDataset):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["SIL"])):
-        self.cfg = cfg
-        self.class_to_int, self.int_to_class = get_mapping(f"{self.cfg.base_dir}/{self.cfg.dataset}/mapping.txt")
+    def __init__(self, cfg: DatasetConfig, train: bool = True):
+        self.class_to_int, self.int_to_class = get_mapping(f"{cfg.base_dir}/{cfg.dataset}/mapping.txt")
         self.masked_class_to_int = mask_backgrounds_in_mapping(self.class_to_int, cfg.backgrounds, -1)
         self.masked_int_to_class = mask_backgrounds_in_mapping(self.int_to_class, cfg.backgrounds, "SIL")
-        self.actions = get_actions(f"{self.cfg.base_dir}/{self.cfg.dataset}/actions.txt")
+        self.actions = get_actions(f"{cfg.base_dir}/{cfg.dataset}/actions.txt")
         self.masked_actions = remove_backgrounds_in_actions(self.actions, cfg.backgrounds)
-        super().__init__()
+        super().__init__(cfg, train)
 
 
 class BreakfastDataLoader(DataLoader):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["SIL"])):
-        dataset = BreakfastDataset(cfg)
+    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["SIL"]), train: bool = True):
+        dataset = BreakfastDataset(cfg, train)
         super(BreakfastDataLoader, self).__init__(dataset, batch_size=cfg.batch_size, shuffle=cfg.shuffle)
         self.cfg = cfg
         self.class_to_int = dataset.class_to_int
@@ -293,30 +263,27 @@ class BreakfastDataLoader(DataLoader):
 
 class Assembly101Dataset(BaseDataset):
     def __init__(self):
-        super().__init__()
         raise NotImplementedError("Assembly101Dataset is not implemented yet.")
 
 
 class AnomalousToyAssemblyDataset(BaseDataset):
     def __init__(self):
-        super().__init__()
         raise NotImplementedError("AnomalousToyAssemblyDataset is not implemented yet.")
 
 
 class NissanDataset(BaseDataset):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"])):
-        self.cfg = cfg
-        self.class_to_int, self.int_to_class = get_mapping(f"{self.cfg.base_dir}/{self.cfg.dataset}/mapping.txt")
+    def __init__(self, cfg: DatasetConfig, train: bool = True):
+        self.class_to_int, self.int_to_class = get_mapping(f"{cfg.base_dir}/{cfg.dataset}/mapping.txt")
         self.masked_class_to_int = mask_backgrounds_in_mapping(self.class_to_int, cfg.backgrounds, -1)
         self.masked_int_to_class = mask_backgrounds_in_mapping(self.int_to_class, cfg.backgrounds, "background")
-        self.actions = get_actions(f"{self.cfg.base_dir}/{self.cfg.dataset}/actions.txt")
+        self.actions = get_actions(f"{cfg.base_dir}/{cfg.dataset}/actions.txt")
         self.masked_actions = remove_backgrounds_in_actions(self.actions, cfg.backgrounds)
-        super().__init__()
+        super().__init__(cfg, train)
 
 
 class NissanDataLoader(DataLoader):
-    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"])):
-        dataset = NissanDataset(cfg)
+    def __init__(self, cfg: DatasetConfig = DatasetConfig(backgrounds=["background"]), train: bool = True):
+        dataset = NissanDataset(cfg, train)
         super(NissanDataLoader, self).__init__(dataset, batch_size=cfg.batch_size, shuffle=cfg.shuffle)
         self.cfg = cfg
         self.class_to_int = dataset.class_to_int
