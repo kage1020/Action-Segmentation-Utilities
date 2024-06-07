@@ -8,7 +8,7 @@ import numpy as np
 from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass()
 class DatasetConfig:
     device: str = 0
     action: str = "train"
