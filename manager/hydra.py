@@ -31,9 +31,9 @@ class Config(DictConfig):
     epochs: int
     lr: float
     weight_decay: float
-    lr_gamma: float
-    lr_step: int
-    ensemble_weights: list[float]
+    lr_gamma: float | None
+    lr_step: int | None
+    ensemble_weights: list[float] | None
 
 
 def validate_config(cfg: Config):
