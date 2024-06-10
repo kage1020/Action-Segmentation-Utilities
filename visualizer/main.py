@@ -12,6 +12,36 @@ from .writer import VideoWriter
 from .palette import template
 
 
+def get_mapping(file_path: str, has_header: bool = False):
+    '''
+    Get the mapping of classes to integers
+
+    Mapping file format should be:
+    class1 0
+    class2 1
+    ...
+    '''
+    with open(file_path, "r") as f:
+        lines = f.readlines()
+        if has_header:
+            lines = lines[1:]
+    text_to_int = {}
+    int_to_text = {}
+    is_csv = ',' in line[0]
+    for line in lines:
+        if is_csv:
+            text, num = line.strip().split(',')
+        else:
+            text, num = line.strip().split()
+        try:
+            num = int(num)
+        except:
+            text, num = num, int(text)
+        text_to_int[text] = num
+        int_to_text[num] = text
+    return text_to_int, int_to_text
+
+
 class Visualizer:
     def __init__(
         self,
@@ -79,28 +109,6 @@ class Visualizer:
             if s not in _mapping:
                 _mapping[s] = len(_mapping)
         return [_mapping[s] for s in x], _mapping
-
-    @staticmethod
-    def get_mapping(file_path: str, has_header: bool = False):
-        '''
-        Get the mapping of classes to integers
-
-        Mapping file format should be:
-        class1 0
-        class2 1
-        ...
-        '''
-        with open(file_path, "r") as f:
-            lines = f.readlines()
-            if has_header:
-                lines = lines[1:]
-        text_to_int = {}
-        int_to_text = {}
-        for line in lines:
-            text, num = line.strip().split()
-            text_to_int[text] = int(num)
-            int_to_text[int(num)] = text
-        return text_to_int, int_to_text
 
     @staticmethod
     def plot_feature(feature: np.ndarray, file_path: str = "feature.png"):
@@ -386,7 +394,7 @@ class Visualizer:
             self.file_path = file_path
 
         if mapping_path is not None:
-            self.mapping, self.int_to_text = Visualizer.get_mapping(mapping_path, has_header)
+            self.mapping, self.int_to_text = get_mapping(mapping_path, has_header)
 
     def close(self):
         self.writer.close()

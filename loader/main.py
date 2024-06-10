@@ -42,10 +42,18 @@ def get_mapping(file_path: str, has_header: bool = False):
             lines = lines[1:]
     text_to_int = {}
     int_to_text = {}
+    is_csv = ',' in line[0]
     for line in lines:
-        text, num = line.strip().split()
-        text_to_int[text] = int(num)
-        int_to_text[int(num)] = text
+        if is_csv:
+            text, num = line.strip().split(',')
+        else:
+            text, num = line.strip().split()
+        try:
+            num = int(num)
+        except:
+            text, num = num, int(text)
+        text_to_int[text] = num
+        int_to_text[num] = text
     return text_to_int, int_to_text
 
 
