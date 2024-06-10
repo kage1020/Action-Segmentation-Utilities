@@ -26,6 +26,8 @@ class Config(DictConfig):
     pseudo_dir: str | None
 
     # learning
+    train: bool
+    model_name: str
     model_dir: str
     result_dir: str
     epochs: int
