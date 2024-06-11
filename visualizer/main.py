@@ -27,7 +27,7 @@ def get_mapping(file_path: str, has_header: bool = False):
             lines = lines[1:]
     text_to_int = {}
     int_to_text = {}
-    is_csv = ',' in line[0]
+    is_csv = ',' in lines[0]
     for line in lines:
         if is_csv:
             text, num = line.strip().split(',')
@@ -386,7 +386,13 @@ class Visualizer:
 
                 writer.update(image)
 
-    def init(self, file_path: str = None, mapping_path: str = None, has_header: bool = False):
+    def init(
+        self,
+        file_path: str = None,
+        mapping_path: str = None,
+        has_header: bool = False,
+        palette: list = None
+    ):
         file = Path(file_path)
         if file.suffix == ".mp4":
             self.writer = VideoWriter(filename=file.stem + '_tmp.mp4')
@@ -395,6 +401,9 @@ class Visualizer:
 
         if mapping_path is not None:
             self.mapping, self.int_to_text = get_mapping(mapping_path, has_header)
+
+        if palette is not None:
+            self.palette = palette
 
     def close(self):
         self.writer.close()
@@ -414,7 +423,8 @@ class Visualizer:
             file_path=output_path,
             num_classes=self.num_classes,
             backgrounds=self.backgrounds,
-            mapping=self.mapping if self.mapping is not None else dict()
+            mapping=self.mapping if self.mapping is not None else dict(),
+            palette=self.palette
         )
 
     def add(self, image: np.ndarray):
