@@ -4,14 +4,15 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Color:
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    RESET = '\033[0m'
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    RESET = "\033[0m"
 
 
-class Logger:
+class Logger(logging.Logger):
     def __init__(self):
+        super(Logger, self).__init__()
         self.logger = logging.getLogger(__name__)
 
     def info(self, message: str | dict | list | object):

@@ -16,14 +16,25 @@ class TestEvaluator(unittest.TestCase):
     def test_to_segments(self):
         x = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
         backgrounds = []
-        self.assertEqual(Evaluator.to_segments(x, backgrounds), [(1, (0, 2)), (2, (2, 4)), (3, (4, 6)), (4, (6, 8)), (5, (8, 10))])
+        self.assertEqual(
+            Evaluator.to_segments(x, backgrounds),
+            [(1, (0, 2)), (2, (2, 4)), (3, (4, 6)), (4, (6, 8)), (5, (8, 10))],
+        )
         backgrounds = [2]
-        self.assertEqual(Evaluator.to_segments(x, backgrounds), [(1, (0, 2)), (3, (4, 6)), (4, (6, 8)), (5, (8, 10))])
+        self.assertEqual(
+            Evaluator.to_segments(x, backgrounds),
+            [(1, (0, 2)), (3, (4, 6)), (4, (6, 8)), (5, (8, 10))],
+        )
         x = [0, 0, 0, 1, 1, 2, 0, 0, 1, 1, 1, 0, 0]
         backgrounds = [0]
-        self.assertEqual(Evaluator.to_segments(x, backgrounds), [(1, (3, 5)), (2, (5, 6)), (1, (8, 11))])
+        self.assertEqual(
+            Evaluator.to_segments(x, backgrounds),
+            [(1, (3, 5)), (2, (5, 6)), (1, (8, 11))],
+        )
         backgrounds = [0, 2]
-        self.assertEqual(Evaluator.to_segments(x, backgrounds), [(1, (3, 5)), (1, (8, 11))])
+        self.assertEqual(
+            Evaluator.to_segments(x, backgrounds), [(1, (3, 5)), (1, (8, 11))]
+        )
 
     def test_accuracy_frame(self):
         gt = [1, 2, 3]
@@ -74,11 +85,15 @@ class TestEvaluator(unittest.TestCase):
         backgrounds = [0]
         self.assertEqual(Evaluator.edit_score(gt, pred, backgrounds), 100.0)
         pred = [0, 0, 1, 1, 1, 3, 3, 3, 0, 0]
-        self.assertAlmostEqual(Evaluator.edit_score(gt, pred, backgrounds), 2 / 3 * 100.0)
+        self.assertAlmostEqual(
+            Evaluator.edit_score(gt, pred, backgrounds), 2 / 3 * 100.0
+        )
         pred = [0, 0, 1, 1, 1, 2, 3, 3, 4, 0]
         self.assertEqual(Evaluator.edit_score(gt, pred, backgrounds), 3 / 4 * 100.0)
         pred = [0, 0, 1, 1, 1, 4, 3, 3, 0, 0]
-        self.assertAlmostEqual(Evaluator.edit_score(gt, pred, backgrounds), 2 / 3 * 100.0)
+        self.assertAlmostEqual(
+            Evaluator.edit_score(gt, pred, backgrounds), 2 / 3 * 100.0
+        )
         pred = [1, 1, 1, 0, 0, 2, 0, 0, 3, 3]
         self.assertEqual(Evaluator.edit_score(gt, pred, backgrounds), 100.0)
 
@@ -100,5 +115,5 @@ class TestEvaluator(unittest.TestCase):
         self.assertEqual(Evaluator.iou(gt, pred), 2 / 10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

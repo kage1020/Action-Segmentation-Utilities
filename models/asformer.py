@@ -8,64 +8,68 @@ from copy import deepcopy
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_len: int = 10000):
-        '''
+        """
         Parameters:
             d_model: dimension of model
             max_len: maximum length of sequence
-        '''
+        """
         super(PositionalEncoding, self).__init__()
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).permute(0, 2, 1)
         self.pe = nn.Parameter(pe, requires_grad=True)
 
     def forward(self, x: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x: (batch size, feature map dimension, number of frames)
         Returns:
             x: (batch size, feature map dimension, number of frames)
-        '''
-        return x + self.pe[:, :, 0:x.shape[2]]
+        """
+        return x + self.pe[:, :, 0 : x.shape[2]]
 
 
 class ConvFeedForward(nn.Module):
     def __init__(self, dilation: int, in_channels: int, out_channels: int):
-        '''
+        """
         Parameters:
             dilation: dilation rate
             in_channels: number of input channels
             out_channels: number of output channels
         Returns:
             out: (batch size, feature map dimension, number of frames)
-        '''
+        """
         super(ConvFeedForward, self).__init__()
         self.layer = nn.Sequential(
-            nn.Conv1d(in_channels, out_channels, 3, dilation=dilation, padding=dilation),
+            nn.Conv1d(
+                in_channels, out_channels, 3, dilation=dilation, padding=dilation
+            ),
             nn.ReLU(),
         )
 
     def forward(self, x) -> Tensor:
-        '''
+        """
         Parameters:
             x: (batch size, feature map dimension, number of frames)
         Returns:
             x: (batch size, feature map dimension, number of frames)
-        '''
+        """
         x = self.layer(x)
         return x
 
 
 class FCFeedForward(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
-        '''
+        """
         Parameters:
             in_channels: number of input channels
             out_channels: number of output channels
-        '''
+        """
         super(FCFeedForward, self).__init__()
         self.layer = nn.Sequential(
             nn.Conv1d(in_channels, out_channels, 1),
@@ -75,12 +79,12 @@ class FCFeedForward(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x: (batch size, feature map dimension, number of frames)
         Returns:
             x: (batch size, feature map dimension, number of frames)
-        '''
+        """
         x = self.layer(x)
         return x
 
@@ -98,7 +102,7 @@ class AttentionLayer(nn.Module):
         att_type: str,
         stage: str,
     ):
-        '''
+        """
         Parameters:
             q_dim: dimension of query
             k_dim: dimension of key
@@ -109,14 +113,22 @@ class AttentionLayer(nn.Module):
             dilation: dilation rate
             att_type: type of attention, it can be 'encoder' or 'decoder'
             stage: stage of the model, it can be 'normal_att', 'block_att', 'sliding_att'
-        '''
+        """
         super(AttentionLayer, self).__init__()
-        assert stage in ['encoder', 'decoder']
-        assert att_type in ['normal_att', 'block_att', 'sliding_att']
-        self.query_conv = nn.Conv1d(in_channels=q_dim, out_channels=q_dim // r1, kernel_size=1)
-        self.key_conv = nn.Conv1d(in_channels=k_dim, out_channels=k_dim // r2, kernel_size=1)
-        self.value_conv = nn.Conv1d(in_channels=v_dim, out_channels=v_dim // r3, kernel_size=1)
-        self.conv_out = nn.Conv1d(in_channels=v_dim // r3, out_channels=v_dim, kernel_size=1)
+        assert stage in ["encoder", "decoder"]
+        assert att_type in ["normal_att", "block_att", "sliding_att"]
+        self.query_conv = nn.Conv1d(
+            in_channels=q_dim, out_channels=q_dim // r1, kernel_size=1
+        )
+        self.key_conv = nn.Conv1d(
+            in_channels=k_dim, out_channels=k_dim // r2, kernel_size=1
+        )
+        self.value_conv = nn.Conv1d(
+            in_channels=v_dim, out_channels=v_dim // r3, kernel_size=1
+        )
+        self.conv_out = nn.Conv1d(
+            in_channels=v_dim // r3, out_channels=v_dim, kernel_size=1
+        )
         self.softmax = nn.Softmax(dim=-1)
         self.dilation = dilation
         self.att_type = att_type
@@ -125,17 +137,19 @@ class AttentionLayer(nn.Module):
         self.window_mask = self._construct_window_mask()
 
     def _construct_window_mask(self) -> torch.Tensor:
-        '''
+        """
         Returns:
             window_mask: (1, dilation, dilation + 2 * (dilation // 2))
-        '''
-        window_mask = torch.zeros((1, self.dilation, self.dilation + 2* (self.dilation //2)))
+        """
+        window_mask = torch.zeros(
+            (1, self.dilation, self.dilation + 2 * (self.dilation // 2))
+        )
         for i in range(self.dilation):
-            window_mask[:, i, i:i+self.dilation] = 1
+            window_mask[:, i, i : i + self.dilation] = 1
         return window_mask
 
     def _normal_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             q: (batch size, feature dimension, number of frames)
             k: (batch size, feature dimension, number of frames)
@@ -143,7 +157,7 @@ class AttentionLayer(nn.Module):
             mask: (batch size, number of action classes, number of frames)
         Returns:
             output: (batch size, feature dimension, number of frames)
-        '''
+        """
         B, _, T = q.size()
         padding_mask = torch.ones((B, 1, T)) * mask[:, 0:1, :]
         output = self.dot(q, k, v, padding_mask)
@@ -152,46 +166,80 @@ class AttentionLayer(nn.Module):
         return output * mask[:, 0:1, :]
 
     def _block_wise_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             q: (batch size, feature dimension, number of frames)
             k: (batch size, feature dimension, number of frames)
             v: (batch size, feature dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
-        '''
+        """
         B, c1, T = q.size()
         _, c2, _ = k.size()
         _, c3, _ = v.size()
 
         nb = T // self.dilation
         if T % self.dilation != 0:
-            q = torch.cat([q, torch.zeros((B, c1, self.dilation - T % self.dilation))], dim=-1)
-            k = torch.cat([k, torch.zeros((B, c2, self.dilation - T % self.dilation))], dim=-1)
-            v = torch.cat([v, torch.zeros((B, c3, self.dilation - T % self.dilation))], dim=-1)
+            q = torch.cat(
+                [q, torch.zeros((B, c1, self.dilation - T % self.dilation))], dim=-1
+            )
+            k = torch.cat(
+                [k, torch.zeros((B, c2, self.dilation - T % self.dilation))], dim=-1
+            )
+            v = torch.cat(
+                [v, torch.zeros((B, c3, self.dilation - T % self.dilation))], dim=-1
+            )
             nb += 1
 
-        padding_mask = torch.cat([torch.ones((B, 1, T)) * mask[:, 0:1, :], torch.zeros((B, 1, self.dilation * nb - T))], dim=-1)
+        padding_mask = torch.cat(
+            [
+                torch.ones((B, 1, T)) * mask[:, 0:1, :],
+                torch.zeros((B, 1, self.dilation * nb - T)),
+            ],
+            dim=-1,
+        )
 
-        q = q.reshape(B, c1, nb, self.dilation).permute(0, 2, 1, 3).reshape(B * nb, c1, self.dilation)
-        padding_mask = padding_mask.reshape(B, 1, nb, self.dilation).permute(0, 2, 1, 3).reshape(B * nb, 1, self.dilation)
-        k = k.reshape(B, c2, nb, self.dilation).permute(0, 2, 1, 3).reshape(B * nb, c2, self.dilation)
-        v = v.reshape(B, c3, nb, self.dilation).permute(0, 2, 1, 3).reshape(B * nb, c3, self.dilation)
+        q = (
+            q.reshape(B, c1, nb, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B * nb, c1, self.dilation)
+        )
+        padding_mask = (
+            padding_mask.reshape(B, 1, nb, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B * nb, 1, self.dilation)
+        )
+        k = (
+            k.reshape(B, c2, nb, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B * nb, c2, self.dilation)
+        )
+        v = (
+            v.reshape(B, c3, nb, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B * nb, c3, self.dilation)
+        )
 
         output = self.dot(q, k, v, padding_mask)
         output = self.conv_out(F.relu(output))
 
-        output = output.reshape(B, nb, c3, self.dilation).permute(0, 2, 1, 3).reshape(B, c3, nb * self.dilation)
+        output = (
+            output.reshape(B, nb, c3, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B, c3, nb * self.dilation)
+        )
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
-    def _sliding_window_att(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
-        '''
+    def _sliding_window_att(
+        self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor
+    ) -> Tensor:
+        """
         Parameters:
             q: (batch size, feature dimension, number of frames)
             k: (batch size, feature dimension, number of frames)
             v: (batch size, feature dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
-        '''
+        """
         B, c1, T = q.size()
         _, c2, _ = k.size()
         _, c3, _ = v.size()
@@ -200,62 +248,157 @@ class AttentionLayer(nn.Module):
         num_block = T // self.dilation
         # padding zeros for the last block
         if T % self.dilation != 0:
-            q = torch.cat([q, torch.zeros((B, c1, self.dilation - T % self.dilation)).to(q.device)], dim=-1)
-            k = torch.cat([k, torch.zeros((B, c2, self.dilation - T % self.dilation)).to(k.device)], dim=-1)
-            v = torch.cat([v, torch.zeros((B, c3, self.dilation - T % self.dilation)).to(v.device)], dim=-1)
+            q = torch.cat(
+                [
+                    q,
+                    torch.zeros((B, c1, self.dilation - T % self.dilation)).to(
+                        q.device
+                    ),
+                ],
+                dim=-1,
+            )
+            k = torch.cat(
+                [
+                    k,
+                    torch.zeros((B, c2, self.dilation - T % self.dilation)).to(
+                        k.device
+                    ),
+                ],
+                dim=-1,
+            )
+            v = torch.cat(
+                [
+                    v,
+                    torch.zeros((B, c3, self.dilation - T % self.dilation)).to(
+                        v.device
+                    ),
+                ],
+                dim=-1,
+            )
             num_block += 1
-        padding_mask = torch.cat([torch.ones((B, 1, T)).to(mask.device) * mask[:, 0:1, :], torch.zeros((B, 1, self.dilation * num_block - T)).to(mask.device)], dim=-1)
+        padding_mask = torch.cat(
+            [
+                torch.ones((B, 1, T)).to(mask.device) * mask[:, 0:1, :],
+                torch.zeros((B, 1, self.dilation * num_block - T)).to(mask.device),
+            ],
+            dim=-1,
+        )
 
         # sliding window approach, by splitting query and key into shape (c1, l) x (c1, 2l)
         # sliding window for query_proj: reshape
-        q = q.reshape(B, c1, num_block, self.dilation).permute(0, 2, 1, 3).reshape(B * num_block, c1, self.dilation)
+        q = (
+            q.reshape(B, c1, num_block, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B * num_block, c1, self.dilation)
+        )
         # sliding window approach for key
         # 1. add paddings at the start and end
-        k = torch.cat([torch.zeros(B, c2, self.dilation // 2).to(k.device), k, torch.zeros(B, c2, self.dilation // 2).to(k.device)], dim=-1)
-        v = torch.cat([torch.zeros(B, c3, self.dilation // 2).to(v.device), v, torch.zeros(B, c3, self.dilation // 2).to(v.device)], dim=-1)
-        padding_mask = torch.cat([torch.zeros(B, 1, self.dilation // 2).to(padding_mask.device), padding_mask, torch.zeros(B, 1, self.dilation // 2).to(padding_mask.device)], dim=-1)
+        k = torch.cat(
+            [
+                torch.zeros(B, c2, self.dilation // 2).to(k.device),
+                k,
+                torch.zeros(B, c2, self.dilation // 2).to(k.device),
+            ],
+            dim=-1,
+        )
+        v = torch.cat(
+            [
+                torch.zeros(B, c3, self.dilation // 2).to(v.device),
+                v,
+                torch.zeros(B, c3, self.dilation // 2).to(v.device),
+            ],
+            dim=-1,
+        )
+        padding_mask = torch.cat(
+            [
+                torch.zeros(B, 1, self.dilation // 2).to(padding_mask.device),
+                padding_mask,
+                torch.zeros(B, 1, self.dilation // 2).to(padding_mask.device),
+            ],
+            dim=-1,
+        )
 
         # 2. reshape key_proj of shape (B*num_block, c1, 2*self.dilation)
-        k = torch.cat([k[:,:, i*self.dilation:(i+1)*self.dilation+(self.dilation//2)*2] for i in range(num_block)], dim=0)
-        v = torch.cat([v[:,:, i*self.dilation:(i+1)*self.dilation+(self.dilation//2)*2] for i in range(num_block)], dim=0)
+        k = torch.cat(
+            [
+                k[
+                    :,
+                    :,
+                    i * self.dilation : (i + 1) * self.dilation
+                    + (self.dilation // 2) * 2,
+                ]
+                for i in range(num_block)
+            ],
+            dim=0,
+        )
+        v = torch.cat(
+            [
+                v[
+                    :,
+                    :,
+                    i * self.dilation : (i + 1) * self.dilation
+                    + (self.dilation // 2) * 2,
+                ]
+                for i in range(num_block)
+            ],
+            dim=0,
+        )
         # 3. construct window mask of shape (1, l, 2l), and use it to generate final mask
-        padding_mask = torch.cat([padding_mask[:,:, i*self.dilation:(i+1)*self.dilation+(self.dilation//2)*2] for i in range(num_block)], dim=0)
-        final_mask = self.window_mask.to(padding_mask.device).repeat(B * num_block, 1, 1) * padding_mask
+        padding_mask = torch.cat(
+            [
+                padding_mask[
+                    :,
+                    :,
+                    i * self.dilation : (i + 1) * self.dilation
+                    + (self.dilation // 2) * 2,
+                ]
+                for i in range(num_block)
+            ],
+            dim=0,
+        )
+        final_mask = (
+            self.window_mask.to(padding_mask.device).repeat(B * num_block, 1, 1)
+            * padding_mask
+        )
 
         output = self.dot(q, k, v, final_mask)
         output: torch.Tensor = self.conv_out(F.relu(output))
 
-        output = output.reshape(B, num_block, -1, self.dilation).permute(0, 2, 1, 3).reshape(B, -1, num_block * self.dilation)
+        output = (
+            output.reshape(B, num_block, -1, self.dilation)
+            .permute(0, 2, 1, 3)
+            .reshape(B, -1, num_block * self.dilation)
+        )
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
     def forward(self, x1: Tensor, x2: Tensor | None, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x1: (batch size, feature map dimension, number of frames)
             x2: (batch size, feature map dimension, number of frames) or None
             mask: (batch size, number of action classes, number of frames)
         Returns:
             output: (batch size, feature map dimension, number of frames)
-        '''
+        """
         query = self.query_conv(x1)
         key = self.key_conv(x1)
 
-        if self.stage == 'decoder':
+        if self.stage == "decoder":
             assert x2 is not None
             value = self.value_conv(x2)
         else:
             value = self.value_conv(x1)
 
-        if self.att_type == 'normal_att':
+        if self.att_type == "normal_att":
             return self._normal_att(query, key, value, mask)
-        elif self.att_type == 'block_att':
+        elif self.att_type == "block_att":
             return self._block_wise_att(query, key, value, mask)
-        elif self.att_type == 'sliding_att':
+        elif self.att_type == "sliding_att":
             return self._sliding_window_att(query, key, value, mask)
 
     def dot(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             q: (feature dimension, feature map dimension, feature dimension)
             k: (feature dimension, feature map dimension, feature dimension)
@@ -263,7 +406,7 @@ class AttentionLayer(nn.Module):
             mask: (feature dimension, feature dimension, feature dimension)
         Returns:
             output: (feature dimension, feature map dimension, feature dimension)
-        '''
+        """
         _, c1, _ = q.shape
         _, c2, _ = k.shape
 
@@ -293,7 +436,7 @@ class MultiHeadAttentionLayer(nn.Module):
         att_type: str,
         num_head: int,
     ):
-        '''
+        """
         Parameters:
             q_dim: dimension of query
             k_dim: dimension of key
@@ -305,29 +448,36 @@ class MultiHeadAttentionLayer(nn.Module):
             stage: stage of the model, it can be 'encoder' or 'decoder'
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             num_head: number of heads
-        '''
+        """
         super(MultiHeadAttentionLayer, self).__init__()
         assert v_dim % num_head == 0
-        assert stage in ['encoder', 'decoder']
-        assert att_type in ['normal_att', 'block_att', 'sliding_att']
+        assert stage in ["encoder", "decoder"]
+        assert att_type in ["normal_att", "block_att", "sliding_att"]
         self.conv_out = nn.Conv1d(v_dim * num_head, v_dim, 1)
-        self.layers = nn.ModuleList([
-            deepcopy(AttentionLayer(q_dim, k_dim, v_dim, r1, r2, r3, dilation, stage, att_type)) for i in range(num_head)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                deepcopy(
+                    AttentionLayer(
+                        q_dim, k_dim, v_dim, r1, r2, r3, dilation, stage, att_type
+                    )
+                )
+                for i in range(num_head)
+            ]
+        )
         self.dropout = nn.Dropout(p=0.5)
         self.dilation = dilation
         self.stage = stage
         self.att_type = att_type
 
     def forward(self, x1: Tensor, x2: Tensor, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x1: (batch size, feature map dimension, number of frames)
             x2: (batch size, feature map dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
         Returns:
             out: (batch size, feature map dimension, number of frames)
-        '''
+        """
         out = torch.cat([layer(x1, x2, mask) for layer in self.layers], dim=1)
         out = self.conv_out(self.dropout(out))
         return out
@@ -345,7 +495,7 @@ class AttentionModule(nn.Module):
         stage: str,
         alpha: float,
     ):
-        '''
+        """
         Parameters:
             dilation: dilation rate
             in_channels: number of input channels
@@ -355,11 +505,21 @@ class AttentionModule(nn.Module):
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             stage: stage of the model, it can be 'encoder' or 'decoder'
             alpha: hyperparameter for residual connection in encoder's attention module
-        '''
+        """
         super(AttentionModule, self).__init__()
         self.feed_forward = ConvFeedForward(dilation, in_channels, out_channels)
         self.norm = nn.InstanceNorm1d(in_channels, track_running_stats=False)
-        self.att_layer = AttentionLayer(in_channels, in_channels, out_channels, r1, r1, r2, dilation, att_type, stage)
+        self.att_layer = AttentionLayer(
+            in_channels,
+            in_channels,
+            out_channels,
+            r1,
+            r1,
+            r2,
+            dilation,
+            att_type,
+            stage,
+        )
         self.conv_1x1 = nn.Conv1d(out_channels, out_channels, 1)
         self.dropout = nn.Dropout()
         self.alpha = alpha
@@ -367,14 +527,14 @@ class AttentionModule(nn.Module):
         self.stage = stage
 
     def forward(self, x: Tensor, f: Tensor | None, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x: (batch size, feature map dimension, number of frames)
             f: (batch size, feature map dimension, number of frames) or None
             mask: (batch size, number of action classes, number of frames)
         Returns:
             out: (batch size, number of action classes, number of frames)
-        '''
+        """
         # dilation convolution + ReLU
         # out: (batch size, feature map dimension, number of frames)
         out: Tensor = self.feed_forward(x)
@@ -407,7 +567,7 @@ class Encoder(nn.Module):
         att_type: str,
         alpha: float,
     ):
-        '''
+        """
         Parameters:
             num_layers: number of layers
             r1: expansion rate for query and key
@@ -421,27 +581,30 @@ class Encoder(nn.Module):
         Returns:
             out: (batch size, number of action classes, number of frames)
             feature: (batch size, feature map dimension, number of frames)
-        '''
+        """
         super(Encoder, self).__init__()
         self.conv_1x1 = nn.Conv1d(input_dim, num_f_maps, 1)
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
-        self.layers = nn.ModuleList([
-            AttentionModule(2**i, num_f_maps, num_f_maps, r1, r2, att_type, 'encoder', alpha)
-            for i
-            in range(num_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                AttentionModule(
+                    2**i, num_f_maps, num_f_maps, r1, r2, att_type, "encoder", alpha
+                )
+                for i in range(num_layers)
+            ]
+        )
         self.dropout = nn.Dropout2d(p=channel_masking_rate)
         self.channel_masking_rate = channel_masking_rate
 
     def forward(self, x: Tensor, mask: Tensor) -> tuple[Tensor, Tensor]:
-        '''
+        """
         Parameters:
             x: (batch size, feature dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
         Returns:
             out: (batch size, number of action classes, number of frames)
             feature: (batch size, feature map dimension, number of frames)
-        '''
+        """
         if self.channel_masking_rate > 0:
             x = x.unsqueeze(2)
             x = self.dropout(x)
@@ -477,7 +640,7 @@ class Decoder(nn.Module):
         att_type: str,
         alpha: float,
     ):
-        '''
+        """
         Parameters:
             index: index of decoder
             num_layers: number of layers
@@ -488,24 +651,27 @@ class Decoder(nn.Module):
             num_classes: number of action classes
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             alpha: hyperparameter for residual connection in encoder's attention module
-        '''
+        """
         super(Decoder, self).__init__()
         self.conv_1x1 = nn.Conv1d(input_dim, num_f_maps, 1)
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
-        self.layers = nn.ModuleList([
-            AttentionModule(2**i, num_f_maps, num_f_maps, r1, r2, att_type, 'decoder', alpha)
-            for i
-            in range(num_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                AttentionModule(
+                    2**i, num_f_maps, num_f_maps, r1, r2, att_type, "decoder", alpha
+                )
+                for i in range(num_layers)
+            ]
+        )
         self.index = index
 
     def forward(self, x: Tensor, f: Tensor, mask: Tensor) -> tuple[Tensor, Tensor]:
-        '''
+        """
         Parameters:
             x: (batch size, number of action classes, number of frames)
             f: (batch size, feature map dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
-        '''
+        """
         # adjust input dimension
         # feature: (batch size, feature map dimension, number of frames)
         feature: Tensor = self.conv_1x1(x)
@@ -533,11 +699,11 @@ class ASFormer(nn.Module):
         input_dim: int,
         num_classes: int,
         channel_masking_rate: float = 0.3,
-        att_type: str = 'sliding_att',
+        att_type: str = "sliding_att",
         alpha: float = 1,
         p: float = 3,
     ):
-        '''
+        """
         Parameters:
             num_decoders: number of decoders
             num_layers: number of layers
@@ -550,23 +716,46 @@ class ASFormer(nn.Module):
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             alpha: hyperparameter for residual connection in encoder's attention module
             p: hyperparameter for exponential decrease of alpha in decoder's attention module
-        '''
+        """
         super(ASFormer, self).__init__()
-        self.encoder = Encoder(num_layers, r1, r2, num_f_maps, input_dim, num_classes, channel_masking_rate, att_type, alpha)
-        self.decoders = nn.ModuleList([
-            deepcopy(Decoder(i, num_layers, r1, r2, num_f_maps, num_classes, num_classes, att_type=att_type, alpha=math.exp(-p*i)))
-            for i
-            in range(num_decoders)
-        ])
+        self.encoder = Encoder(
+            num_layers,
+            r1,
+            r2,
+            num_f_maps,
+            input_dim,
+            num_classes,
+            channel_masking_rate,
+            att_type,
+            alpha,
+        )
+        self.decoders = nn.ModuleList(
+            [
+                deepcopy(
+                    Decoder(
+                        i,
+                        num_layers,
+                        r1,
+                        r2,
+                        num_f_maps,
+                        num_classes,
+                        num_classes,
+                        att_type=att_type,
+                        alpha=math.exp(-p * i),
+                    )
+                )
+                for i in range(num_decoders)
+            ]
+        )
 
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
-        '''
+        """
         Parameters:
             x: (batch size, feature dimension, number of frames)
             mask: (batch size, number of action classes, number of frames)
         Returns:
             outputs: (1 + num_decoders, batch size, number of action classes, number of frames)
-        '''
+        """
         # encode input
         # out: (batch size, number of action classes, number of frames)
         # feature: (batch size, feature map dimension, number of frames)

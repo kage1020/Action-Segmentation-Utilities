@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
+
 # =========================================
 # This class was created by Yota Yamamoto.
 # Thanks for sharing this code!
@@ -69,7 +70,7 @@ class VideoWriter:
                 pix_fmt=self.pix_fmt_ou,
                 qmax=quality,
                 qmin=quality,
-                loglevel="quiet"
+                loglevel="quiet",
             )
             .overwrite_output()
             .run_async(pipe_stdin=True, quiet=True)

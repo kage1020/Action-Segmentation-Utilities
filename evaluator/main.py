@@ -13,7 +13,9 @@ class Evaluator:
     fps: list[int]
     fns: list[int]
 
-    def __init__(self, taus: list[float] = [0.1, 0.25, 0.5], backgrounds: list[int] = []):
+    def __init__(
+        self, taus: list[float] = [0.1, 0.25, 0.5], backgrounds: list[int] = []
+    ):
         self.taus = taus
         self.backgrounds = backgrounds
         self.num_videos = 0
@@ -36,8 +38,7 @@ class Evaluator:
 
     @staticmethod
     def to_segments(
-        x: list | np.ndarray | Tensor,
-        backgrounds: list | np.ndarray | Tensor
+        x: list | np.ndarray | Tensor, backgrounds: list | np.ndarray | Tensor
     ) -> list:
         _x = Evaluator.to_np(x)
         _backgrounds = Evaluator.to_np(backgrounds)
@@ -56,8 +57,7 @@ class Evaluator:
 
     @staticmethod
     def accuracy_frame(
-        gt: list | np.ndarray | Tensor,
-        pred: list | np.ndarray | Tensor
+        gt: list | np.ndarray | Tensor, pred: list | np.ndarray | Tensor
     ) -> float:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -65,8 +65,7 @@ class Evaluator:
 
     @staticmethod
     def accuracy_class(
-        gt: list | np.ndarray | Tensor,
-        pred: list | np.ndarray | Tensor
+        gt: list | np.ndarray | Tensor, pred: list | np.ndarray | Tensor
     ) -> list[float]:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -80,8 +79,7 @@ class Evaluator:
 
     @staticmethod
     def levenshtein(
-        x: list | np.ndarray | Tensor,
-        y: list | np.ndarray | Tensor
+        x: list | np.ndarray | Tensor, y: list | np.ndarray | Tensor
     ) -> int:
         n = len(x)
         m = len(y)
@@ -95,7 +93,7 @@ class Evaluator:
                 dp[i][j] = min(
                     dp[i - 1][j] + 1,
                     dp[i][j - 1] + 1,
-                    dp[i - 1][j - 1] + (x[i - 1] != y[j - 1])
+                    dp[i - 1][j - 1] + (x[i - 1] != y[j - 1]),
                 )
         return dp[n][m]
 
@@ -103,7 +101,7 @@ class Evaluator:
     def edit_score(
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> float:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -126,7 +124,7 @@ class Evaluator:
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> tuple[int, int, int]:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
@@ -137,8 +135,14 @@ class Evaluator:
         fn = 0
         hits = set()
         for pred_segment in pred_segments:
-            matches = [gt_segment for gt_segment in gt_segments if pred_segment[0] == gt_segment[0]]
-            ious = [Evaluator.iou(gt_segment[1], pred_segment[1]) for gt_segment in matches]
+            matches = [
+                gt_segment
+                for gt_segment in gt_segments
+                if pred_segment[0] == gt_segment[0]
+            ]
+            ious = [
+                Evaluator.iou(gt_segment[1], pred_segment[1]) for gt_segment in matches
+            ]
             idx = np.argmax(ious) if len(ious) > 0 else None
             if idx is not None and ious[idx] >= tau and matches[idx] not in hits:
                 tp += 1
@@ -153,7 +157,7 @@ class Evaluator:
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> float:
         tp, fp, _ = Evaluator.tp_fp_fn(gt, pred, tau, backgrounds)
         return tp / (tp + fp) if tp + fp > 0 else 0.0
@@ -163,7 +167,7 @@ class Evaluator:
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> float:
         tp, _, fn = Evaluator.tp_fp_fn(gt, pred, tau, backgrounds)
         return tp / (tp + fn) if tp + fn > 0 else 0.0
@@ -173,7 +177,7 @@ class Evaluator:
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
         tau: float,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> float:
         p = Evaluator.precision(gt, pred, tau, backgrounds)
         r = Evaluator.recall(gt, pred, tau, backgrounds)
@@ -183,13 +187,15 @@ class Evaluator:
         self,
         gt: list | np.ndarray | Tensor,
         pred: list | np.ndarray | Tensor,
-        backgrounds: list | np.ndarray | Tensor
+        backgrounds: list | np.ndarray | Tensor,
     ) -> None:
         self.num_videos += 1
         self.num_total_frames += len(gt)
         self.num_correct_frames += round(len(gt) * Evaluator.accuracy_frame(gt, pred))
         self.edit_distances += Evaluator.edit_score(gt, pred, backgrounds)
-        tps, fps, fns = zip(*[Evaluator.tp_fp_fn(gt, pred, tau, backgrounds) for tau in self.taus])
+        tps, fps, fns = zip(
+            *[Evaluator.tp_fp_fn(gt, pred, tau, backgrounds) for tau in self.taus]
+        )
         self.tps = [self.tps[i] + tps[i] for i in range(len(self.tps))]
         self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
         self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
@@ -197,9 +203,24 @@ class Evaluator:
     def get(self) -> tuple[float, float, list[float]]:
         acc = self.num_correct_frames / self.num_total_frames * 100
         edit = self.edit_distances / self.num_videos
-        precision = [self.tps[i] / (self.tps[i] + self.fps[i]) if self.tps[i] + self.fps[i] > 0 else 0.0 for i in range(len(self.tps))]
-        recall = [self.tps[i] / (self.tps[i] + self.fns[i]) if self.tps[i] + self.fns[i] > 0 else 0.0 for i in range(len(self.tps))]
-        f1 = [2 * precision[i] * recall[i] / (precision[i] + recall[i]) if precision[i] + recall[i] > 0 else 0.0 for i in range(len(precision))]
+        precision = [
+            self.tps[i] / (self.tps[i] + self.fps[i])
+            if self.tps[i] + self.fps[i] > 0
+            else 0.0
+            for i in range(len(self.tps))
+        ]
+        recall = [
+            self.tps[i] / (self.tps[i] + self.fns[i])
+            if self.tps[i] + self.fns[i] > 0
+            else 0.0
+            for i in range(len(self.tps))
+        ]
+        f1 = [
+            2 * precision[i] * recall[i] / (precision[i] + recall[i])
+            if precision[i] + recall[i] > 0
+            else 0.0
+            for i in range(len(precision))
+        ]
         return acc, edit, f1
 
     def reset(self) -> None:

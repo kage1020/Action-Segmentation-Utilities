@@ -63,9 +63,11 @@ class Up(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, bilinear: bool = True):
         super(Up, self).__init__()
         if bilinear:
-            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         else:
-            self.up = nn.ConvTranspose1d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)
+            self.up = nn.ConvTranspose1d(
+                in_channels // 2, in_channels // 2, kernel_size=2, stride=2
+            )
         self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
@@ -108,12 +110,12 @@ class C2F_TCN(nn.Module):
         num_classes: int,
         num_features: int,
     ):
-        '''
+        """
         Parameters:
             num_channels: number of channels in the input data
             num_classes: number of classes in the output data
             num_features: number of features in the output data
-        '''
+        """
         super(C2F_TCN, self).__init__()
         self.inconv = InConv(num_channels, 256)
         self.down1 = Down(256, 256)
@@ -145,11 +147,17 @@ class C2F_TCN(nn.Module):
     def ensemble(self, y: list[Tensor]) -> Tensor:
         ensemble_weights = [1, 1, 1, 1, 1, 1]
         num_videos = y[0].shape[-1]
-        ensemble_prob = F.softmax(y[0], dim=1) * ensemble_weights[0] / sum(ensemble_weights)
+        ensemble_prob = (
+            F.softmax(y[0], dim=1) * ensemble_weights[0] / sum(ensemble_weights)
+        )
 
         for i, y_i in enumerate(y[1:]):
             logit = upsize(y_i, num_videos)
-            ensemble_prob += F.softmax(logit, dim=1) * ensemble_weights[i+1] / sum(ensemble_weights)
+            ensemble_prob += (
+                F.softmax(logit, dim=1)
+                * ensemble_weights[i + 1]
+                / sum(ensemble_weights)
+            )
 
         return torch.log(ensemble_prob + 1e-8)
 
@@ -187,7 +195,9 @@ class C2F_TCN(nn.Module):
         p_list = [upsize(p, num_videos) for p in p_list]
         p_list = [p / torch.norm(p, dim=1, keepdim=True) for p in p_list]
 
-        features = torch.cat([feat * math.sqrt(wt) for (wt, feat) in zip(weights, p_list)], dim=1)
+        features = torch.cat(
+            [feat * math.sqrt(wt) for (wt, feat) in zip(weights, p_list)], dim=1
+        )
         total_norm = math.sqrt(sum(weights))
         features = features / total_norm
         return features, self.ensemble(y_list)

@@ -4,7 +4,6 @@ from pathlib import Path
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-import matplotlib.cm as cm
 import cv2
 import numpy as np
 from torch import Tensor
@@ -13,29 +12,29 @@ from .palette import template
 
 
 def get_mapping(file_path: str, has_header: bool = False):
-    '''
+    """
     Get the mapping of classes to integers
 
     Mapping file format should be:
     class1 0
     class2 1
     ...
-    '''
+    """
     with open(file_path, "r") as f:
         lines = f.readlines()
         if has_header:
             lines = lines[1:]
     text_to_int = {}
     int_to_text = {}
-    is_csv = ',' in lines[0]
+    is_csv = "," in lines[0]
     for line in lines:
         if is_csv:
-            text, num = line.strip().split(',')
+            text, num = line.strip().split(",")
         else:
             text, num = line.strip().split()
         try:
             num = int(num)
-        except:
+        except ValueError:
             text, num = num, int(text)
         text_to_int[text] = num
         int_to_text[num] = text
@@ -44,9 +43,7 @@ def get_mapping(file_path: str, has_header: bool = False):
 
 class Visualizer:
     def __init__(
-        self,
-        backgrounds: list[str] | np.ndarray | Tensor = [],
-        num_classes: int = 50
+        self, backgrounds: list[str] | np.ndarray | Tensor = [], num_classes: int = 50
     ):
         self.backgrounds = backgrounds
         self.num_classes = num_classes
@@ -56,8 +53,8 @@ class Visualizer:
 
     @staticmethod
     def load_images(image_dir: str) -> list[str]:
-        image_paths = glob.glob(f'{image_dir}/*.png')
-        image_paths += glob.glob(f'{image_dir}/*.jpg')
+        image_paths = glob.glob(f"{image_dir}/*.png")
+        image_paths += glob.glob(f"{image_dir}/*.jpg")
         image_paths.sort()
         return image_paths
 
@@ -69,7 +66,9 @@ class Visualizer:
             return image
 
     @staticmethod
-    def to_np(x: list | np.ndarray | Tensor, mapping: dict[str, int] | None = None) -> np.ndarray:
+    def to_np(
+        x: list | np.ndarray | Tensor, mapping: dict[str, int] | None = None
+    ) -> np.ndarray:
         if isinstance(x, Tensor):
             return x.detach().cpu().numpy(), mapping
         if isinstance(x, np.ndarray):
@@ -85,7 +84,7 @@ class Visualizer:
     def to_segments(
         x: list[str] | np.ndarray | Tensor,
         backgrounds: list[str] | np.ndarray | Tensor,
-        mapping: dict[str, int] | None = None
+        mapping: dict[str, int] | None = None,
     ) -> list[int, tuple[int, int]]:
         _x, _mapping = Visualizer.to_np(x, mapping)
         _backgrounds, _mapping = Visualizer.to_np(backgrounds, mapping)
@@ -112,12 +111,14 @@ class Visualizer:
 
     @staticmethod
     def plot_feature(feature: np.ndarray, file_path: str = "feature.png"):
-        assert isinstance(feature, np.ndarray) or isinstance(feature, Tensor), 'Feature must be a numpy array or a torch tensor'
-        assert len(feature.shape) == 2, 'Feature must be a 2D array'
+        assert isinstance(feature, np.ndarray) or isinstance(
+            feature, Tensor
+        ), "Feature must be a numpy array or a torch tensor"
+        assert len(feature.shape) == 2, "Feature must be a 2D array"
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        axfig = ax.imshow(feature, aspect='auto', interpolation='none', cmap='jet')
+        axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap="jet")
         fig.colorbar(axfig, ax=ax)
         fig.subplots_adjust(left=0.1, right=1.05, top=0.98, bottom=0.05)
         fig.savefig(file_path)
@@ -127,11 +128,17 @@ class Visualizer:
     def plot_loss(
         train_loss: list[int, float] | None = None,
         test_loss: list[int, float] | None = None,
-        file_path: str = "loss.png"
+        file_path: str = "loss.png",
     ):
-        assert train_loss or test_loss, 'Either `train_loss` or `test_loss` must be provided'
-        assert train_loss or len(train_loss[0]) == 2, '`train_loss` must be a list of tuples with epoch and loss'
-        assert test_loss or len(test_loss[0]) == 2, '`test_loss` must be a list of tuples with epoch and loss'
+        assert (
+            train_loss or test_loss
+        ), "Either `train_loss` or `test_loss` must be provided"
+        assert (
+            train_loss or len(train_loss[0]) == 2
+        ), "`train_loss` must be a list of tuples with epoch and loss"
+        assert (
+            test_loss or len(test_loss[0]) == 2
+        ), "`test_loss` must be a list of tuples with epoch and loss"
 
         epochs = [x[0] for x in train_loss] if train_loss else [x[0] for x in test_loss]
         train_values = [x[1] for x in train_loss] if train_loss else []
@@ -139,11 +146,11 @@ class Visualizer:
         fig = plt.figure()
         ax = fig.add_subplot(111)
         if train_loss:
-            ax.plot(epochs, train_values, label='Train')
+            ax.plot(epochs, train_values, label="Train")
         if test_loss:
-            ax.plot(epochs, test_values, label='Test')
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel('Loss')
+            ax.plot(epochs, test_values, label="Test")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Loss")
         if train_loss and test_loss:
             ax.legend()
         fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
@@ -152,18 +159,18 @@ class Visualizer:
 
     @staticmethod
     def plot_confidences(
-        confidences: list[float],
-        file_path: str = "confidences.png",
-        axis: bool = True
+        confidences: list[float], file_path: str = "confidences.png", axis: bool = True
     ):
-        assert isinstance(confidences[0], float), '`confidences` must be a list of floats'
+        assert isinstance(
+            confidences[0], float
+        ), "`confidences` must be a list of floats"
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(confidences)
         ax.set_ylim(bottom=0, top=1)
-        ax.set_xlabel('Frame')
-        ax.set_ylabel('Confidence')
+        ax.set_xlabel("Frame")
+        ax.set_ylabel("Confidence")
         fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
         if not axis:
             fig.canvas.draw()
@@ -185,9 +192,11 @@ class Visualizer:
         backgrounds: list[str] | np.ndarray | Tensor = [],
         num_classes: int = 50,
         palette: list[tuple[float]] | None = None,
-        axis: bool = True
+        axis: bool = True,
     ):
-        assert pred is not None or gt is not None, 'Either `pred` or `gt` must be provided'
+        assert (
+            pred is not None or gt is not None
+        ), "Either `pred` or `gt` must be provided"
 
         if pred is not None and gt is None:
             _pred, mapping = Visualizer.to_np(pred, mapping)
@@ -222,41 +231,54 @@ class Visualizer:
         elif pred is not None and gt is not None and confidences is None:
             bar_ax: Axes = fig.add_axes([0.05, 0.15, 0.94, 0.8])
         else:
-            bar_ax: Axes = fig.add_axes([0.06, 0.15+0.8/3, 0.92, 0.8/3*2])
+            bar_ax: Axes = fig.add_axes([0.06, 0.15 + 0.8 / 3, 0.92, 0.8 / 3 * 2])
 
         if palette is None:
-            palette = template(num_classes, 'cividis')
+            palette = template(num_classes, "cividis")
 
         for i in range(max_len):
             if pred is not None and gt is None:
-                bar_ax.barh("pred", pred_segments[i][1][1] - pred_segments[i][1][0], color=palette[pred_segments[i][0]], left=acc)
+                bar_ax.barh(
+                    "pred",
+                    pred_segments[i][1][1] - pred_segments[i][1][0],
+                    color=palette[pred_segments[i][0]],
+                    left=acc,
+                )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
             elif pred is None and gt is not None:
-                bar_ax.barh("GT", gt_segments[i][1][1] - gt_segments[i][1][0], color=palette[gt_segments[i][0]], left=acc)
+                bar_ax.barh(
+                    "GT",
+                    gt_segments[i][1][1] - gt_segments[i][1][0],
+                    color=palette[gt_segments[i][0]],
+                    left=acc,
+                )
                 acc[0] += gt_segments[i][1][1] - gt_segments[i][1][0]
             elif pred is not None and gt is not None:
                 bar_ax.barh(
-                    ['Pred', 'GT'],
-                    [pred_segments[i][1][1] - pred_segments[i][1][0], gt_segments[i][1][1] - gt_segments[i][1][0]],
+                    ["Pred", "GT"],
+                    [
+                        pred_segments[i][1][1] - pred_segments[i][1][0],
+                        gt_segments[i][1][1] - gt_segments[i][1][0],
+                    ],
                     color=[palette[pred_segments[i][0]], palette[gt_segments[i][0]]],
-                    left=acc
+                    left=acc,
                 )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
                 acc[1] += gt_segments[i][1][1] - gt_segments[i][1][0]
         bar_ax.set_xlim(right=acc[0])
-        bar_ax.set_xlabel('Frame')
+        bar_ax.set_xlabel("Frame")
         if pred is None or gt is None:
             bar_ax.set_yticks([])
 
         if confidences is not None:
-            line_ax: Axes = fig.add_axes([0.06, 0.15, 0.92, 0.8/3])
-            line_ax.plot(_confidences, color='black')
+            line_ax: Axes = fig.add_axes([0.06, 0.15, 0.92, 0.8 / 3])
+            line_ax.plot(_confidences, color="black")
             line_ax.set_ylim(bottom=0, top=1)
             line_ax.set_xmargin(0)
-            line_ax.set_xlabel('Frame')
-            line_ax.set_ylabel('Confidence')
+            line_ax.set_xlabel("Frame")
+            line_ax.set_ylabel("Confidence")
             bar_ax.set_xticks([])
-            bar_ax.set_xlabel('')
+            bar_ax.set_xlabel("")
         if axis:
             fig.savefig(file_path)
             plt.close(fig)
@@ -280,9 +302,11 @@ class Visualizer:
         backgrounds: list[str] | np.ndarray | Tensor = [],
         mapping: dict[str, int] | None = dict(),
         num_classes: int = 50,
-        show_label: bool = True
+        show_label: bool = True,
     ):
-        assert image_dir is not None or images is not None or video_path is not None, 'Either `image_dir`, `images`, or `video_path` must be provided'
+        assert (
+            image_dir is not None or images is not None or video_path is not None
+        ), "Either `image_dir`, `images`, or `video_path` must be provided"
         if images is None and image_dir is not None:
             images = Visualizer.load_images(image_dir)
         if images is None and video_path is not None:
@@ -309,7 +333,7 @@ class Visualizer:
             backgrounds=backgrounds,
             num_classes=num_classes,
             mapping=mapping,
-            axis=False
+            axis=False,
         )
         seg_h, _, _ = seg_canvas.shape
         video_size[1] += seg_h
@@ -346,41 +370,41 @@ class Visualizer:
                     if pred is not None and gt is None:
                         cv2.putText(
                             img=text_bar,
-                            text="pred: "+str(_pred[i]),
-                            org=(img_w//30, text_h//4*3),
+                            text="pred: " + str(_pred[i]),
+                            org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
                             color=(0, 0, 0),
-                            thickness=5
+                            thickness=5,
                         )
                     if pred is None and gt is not None:
                         cv2.putText(
                             img=text_bar,
-                            text="gt: "+str(_gt[i]),
-                            org=(img_w//30, text_h//4*3),
+                            text="gt: " + str(_gt[i]),
+                            org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
                             color=(0, 0, 0),
-                            thickness=5
+                            thickness=5,
                         )
                     if pred is not None and gt is not None:
                         cv2.putText(
                             img=text_bar,
-                            text="pred: "+str(_pred[i]),
-                            org=(img_w//30, text_h//4*3),
+                            text="pred: " + str(_pred[i]),
+                            org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
                             color=(0, 0, 0),
-                            thickness=5
+                            thickness=5,
                         )
                         cv2.putText(
                             img=text_bar,
-                            text="gt: "+str(_gt[i]),
-                            org=(img_w*16//30, text_h//4*3),
+                            text="gt: " + str(_gt[i]),
+                            org=(img_w * 16 // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
                             color=(0, 0, 0),
-                            thickness=5
+                            thickness=5,
                         )
                     image = np.concatenate([image, text_bar], axis=0)
 
@@ -391,11 +415,11 @@ class Visualizer:
         file_path: str = None,
         mapping_path: str = None,
         has_header: bool = False,
-        palette: list = None
+        palette: list = None,
     ):
         file = Path(file_path)
         if file.suffix == ".mp4":
-            self.writer = VideoWriter(filename=file.stem + '_tmp.mp4')
+            self.writer = VideoWriter(filename=file.stem + "_tmp.mp4")
         else:
             self.file_path = file_path
 
@@ -424,12 +448,14 @@ class Visualizer:
             num_classes=self.num_classes,
             backgrounds=self.backgrounds,
             mapping=self.mapping if self.mapping is not None else dict(),
-            palette=self.palette
+            palette=self.palette,
         )
 
     def add(self, image: np.ndarray):
         if self.writer is None:
-            print("[WARNING] VideoWriter is not initialized. Initializing with default filename 'action_segmentation.mp4'")
+            print(
+                "[WARNING] VideoWriter is not initialized. Initializing with default filename 'action_segmentation.mp4'"
+            )
             self.init("action_segmentation.mp4")
         self.writer.update(image)
 
@@ -448,7 +474,7 @@ class Visualizer:
             self.confidences = Visualizer.to_np(confidences)[0]
 
         self.writer.close()
-        video_path = self.writer.filename.replace('_tmp.mp4', '.mp4')
+        video_path = self.writer.filename.replace("_tmp.mp4", ".mp4")
         Visualizer.make_video(
             pred=self.pred,
             gt=self.gt,
@@ -456,6 +482,6 @@ class Visualizer:
             file_path=video_path,
             video_path=self.writer.filename,
             backgrounds=self.backgrounds,
-            num_classes=self.num_classes
+            num_classes=self.num_classes,
         )
         os.remove(self.writer.filename)
