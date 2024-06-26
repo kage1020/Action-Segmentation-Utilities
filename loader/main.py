@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import torch
+from torch.nn import Module
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch import Tensor
@@ -10,7 +11,7 @@ from dataclasses import dataclass, field
 
 @dataclass()
 class DatasetConfig:
-    device: str = 0
+    device: str | int = 0
     action: str = "train"
 
     dataset: str = "breakfast"
@@ -38,16 +39,17 @@ def get_mapping(file_path: str, has_header: bool = False):
     """
     with open(file_path, "r") as f:
         lines = f.readlines()
+        lines = [line.strip() for line in lines if line.strip() != ""]
         if has_header:
             lines = lines[1:]
-    text_to_int = {}
-    int_to_text = {}
+    text_to_int: dict[str, int] = {}
+    int_to_text: dict[int, str] = {}
     is_csv = "," in lines[0]
     for line in lines:
         if is_csv:
-            text, num = line.strip().split(",")
+            text, num = line.split(",")
         else:
-            text, num = line.strip().split()
+            text, num = line.split(" ")
         try:
             num = int(num)
         except ValueError:
@@ -67,11 +69,12 @@ def get_actions(file_path: str, has_header: bool = False):
     """
     with open(file_path, "r") as f:
         lines = f.readlines()
+        lines = [line.strip() for line in lines if line.strip() != ""]
         if has_header:
             lines = lines[1:]
-    actions = {}
+    actions: dict[str, list[str]] = {}
     for line in lines:
-        action, classes = line.strip().split()
+        action, classes = line.split(" ")
         actions[action] = classes.split(",")
     return actions
 
@@ -87,16 +90,21 @@ def get_matching(file_path: str, has_header: bool = False):
     """
     with open(file_path, "r") as f:
         lines = f.readlines()
+        lines = [line.strip() for line in lines if line.strip() != ""]
         if has_header:
             lines = lines[1:]
     matching = {}
     for line in lines:
-        video, action = line.strip().split()
+        video, action = line.split(" ")
         matching[video] = action
+
+    return matching
 
 
 def mask_backgrounds_in_mapping(
-    mapping: dict, backgrounds: list[int | str], mask_value: int | str
+    mapping: dict[str | int, str | int],
+    backgrounds: list[int | str],
+    mask_value: int | str,
 ):
     """
     Mask the background classes in the mapping. Key of mapping should be same as the elements of backgrounds
@@ -107,7 +115,9 @@ def mask_backgrounds_in_mapping(
     return _mapping
 
 
-def remove_backgrounds_in_actions(actions: dict, backgrounds: list[int | str]):
+def remove_backgrounds_in_actions(
+    actions: dict[str | int, list[str | int]], backgrounds: list[int | str]
+):
     """
     Remove the background classes from the actions. Key of actions should be same as the elements of backgrounds
     """
@@ -122,17 +132,17 @@ def remove_backgrounds_in_actions(actions: dict, backgrounds: list[int | str]):
 class BaseDataset(Dataset):
     cfg: DatasetConfig
     train: str
-    class_to_int = None
-    int_to_class = None
-    masked_class_to_int = None
-    masked_int_to_class = None
+    class_to_int = {}
+    int_to_class = {}
+    masked_class_to_int = {}
+    masked_int_to_class = {}
     actions = {}
     masked_actions = {}
     videos = []
 
     def __init__(self, cfg: DatasetConfig, train: bool = True):
-        self.train = "train" if train else "test"
         self.cfg = cfg
+        self.train = "train" if train else "test"
         # load videos
         with open(
             f"{cfg.base_dir}/{cfg.dataset}/{cfg.split_dir}/{self.train}.split{cfg.split}.bundle",
@@ -140,9 +150,9 @@ class BaseDataset(Dataset):
         ) as f:
             lines = f.readlines()
             self.videos = [line.strip() for line in lines if line.strip() != ""]
-
-        # if self.train == "train":
-        #     self.__generate_pseudo_labels()
+        self.class_to_int, self.int_to_class = get_mapping(
+            f"{cfg.base_dir}/{cfg.dataset}/mapping.txt"
+        )
 
     def __len__(self):
         return len(self.videos)
@@ -170,7 +180,7 @@ class BaseDataset(Dataset):
         if gt_path.exists():
             with open(gt_path, "r") as f:
                 labels = [line.strip() for line in f.readlines() if line.strip() != ""]
-            probabilities = torch.zeros(len(labels), len(self.class_to_int))
+            probabilities = torch.ones(len(labels), len(self.class_to_int))
         else:
             with open(pseudo_path, "r") as f:
                 labels = [line.strip() for line in f.readlines() if line.strip() != ""]
@@ -180,7 +190,7 @@ class BaseDataset(Dataset):
 
         return features, labels, probabilities
 
-    def __generate_pseudo_labels(self, model):
+    def generate_pseudo_labels(self, model: Module):
         os.makedirs(
             f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.pseudo_dir}",
             exist_ok=True,
@@ -243,9 +253,6 @@ class BaseDataset(Dataset):
 
 class SaladsDataset(BaseDataset):
     def __init__(self, cfg: DatasetConfig, train: bool = True):
-        self.class_to_int, self.int_to_class = get_mapping(
-            f"{cfg.base_dir}/{cfg.dataset}/mapping.txt"
-        )
         self.masked_class_to_int = mask_backgrounds_in_mapping(
             self.class_to_int, cfg.backgrounds, -1
         )
@@ -270,9 +277,6 @@ class SaladsDataLoader(DataLoader):
 
 class GTEADataset(BaseDataset):
     def __init__(self, cfg: DatasetConfig, train: bool = True):
-        self.class_to_int, self.int_to_class = get_mapping(
-            f"{cfg.base_dir}/{cfg.dataset}/mapping.txt"
-        )
         self.masked_class_to_int = mask_backgrounds_in_mapping(
             self.class_to_int, cfg.backgrounds, -1
         )
@@ -301,9 +305,6 @@ class GTEADataLoader(DataLoader):
 
 class BreakfastDataset(BaseDataset):
     def __init__(self, cfg: DatasetConfig, train: bool = True):
-        self.class_to_int, self.int_to_class = get_mapping(
-            f"{cfg.base_dir}/{cfg.dataset}/mapping.txt"
-        )
         self.masked_class_to_int = mask_backgrounds_in_mapping(
             self.class_to_int, cfg.backgrounds, -1
         )
@@ -346,9 +347,6 @@ class AnomalousToyAssemblyDataset(BaseDataset):
 
 class NissanDataset(BaseDataset):
     def __init__(self, cfg: DatasetConfig, train: bool = True):
-        self.class_to_int, self.int_to_class = get_mapping(
-            f"{cfg.base_dir}/{cfg.dataset}/mapping.txt"
-        )
         self.masked_class_to_int = mask_backgrounds_in_mapping(
             self.class_to_int, cfg.backgrounds, -1
         )
