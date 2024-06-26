@@ -10,13 +10,14 @@ class Config(DictConfig):
     seed: int
     device: int
     verbose: bool
+    val_skip: bool
 
     # dataset
     dataset: str
     split: int
+    num_fold: int
     backgrounds: list[str]
     batch_size: int
-    sample_rate: int
     shuffle: bool
     base_dir: str
     split_dir: str
@@ -24,6 +25,7 @@ class Config(DictConfig):
     feature_dir: str
     prob_dir: str | None
     pseudo_dir: str | None
+    semi_per: float
 
     # learning
     train: bool
@@ -33,9 +35,7 @@ class Config(DictConfig):
     epochs: int
     lr: float
     weight_decay: float
-    lr_gamma: float | None
-    lr_step: int | None
-    ensemble_weights: list[float] | None
+    mse_weight: float
 
 
 def validate_config(cfg: Config):
@@ -47,13 +47,13 @@ class HydraManager:
         self.config_path = Path(config_path)
 
     def __call__(self, fn):
-        print(self.config_path.parent.absolute().as_posix(), self.config_path.stem)
         @hydra.main(
             config_path=self.config_path.parent.absolute().as_posix(),
             config_name=self.config_path.stem,
-            version_base=None
+            version_base=None,
         )
         def wrapper(cfg: Config):
             cfg = validate_config(cfg)
             return fn(cfg)
+
         return wrapper
