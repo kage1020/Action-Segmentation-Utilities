@@ -1,5 +1,6 @@
 import numpy as np
 from torch import Tensor
+from sklearn.metrics import roc_auc_score
 
 
 class Evaluator:
@@ -42,7 +43,7 @@ class Evaluator:
     ) -> list:
         _x = Evaluator.to_np(x)
         _backgrounds = Evaluator.to_np(backgrounds)
-        diff = np.diff(_x, prepend=-1)
+        diff = np.diff(_x, prepend=-100)
         indices = np.where(diff != 0)[0]
         segments = []
 
@@ -182,6 +183,21 @@ class Evaluator:
         p = Evaluator.precision(gt, pred, tau, backgrounds)
         r = Evaluator.recall(gt, pred, tau, backgrounds)
         return 2 * p * r / (p + r) if p + r > 0 else 0.0
+
+    @staticmethod
+    def auc(
+        gt: list | np.ndarray | Tensor,
+        prob: np.ndarray | Tensor,
+        backgrounds: list | np.ndarray | Tensor,
+    ) -> float:
+        _gt = Evaluator.to_np(gt)
+        _prob = Evaluator.to_np(prob)
+        _backgrounds = Evaluator.to_np(backgrounds)
+        mask = np.isin(_gt, _backgrounds)
+        _gt[mask] = -100
+        _prob[mask] = 0
+        _prob[mask, 0] = 1
+        return roc_auc_score(_gt, _prob, multi_class="ovo")
 
     def add(
         self,
