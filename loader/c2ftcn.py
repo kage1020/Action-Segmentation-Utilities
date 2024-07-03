@@ -9,8 +9,11 @@ from .main import DatasetConfig, BaseDataset
 class C2FTCNBreakfastDataset(BaseDataset):
     zoom_crop = (0.5, 2)
     smallest_cut = 1.0
+    unlabeled = []
 
-    def __init__(self, cfg: DatasetConfig, train: bool = True):
+    def __init__(
+        self, cfg: DatasetConfig, train: bool = True, unsupervised: bool = False
+    ):
         super(C2FTCNBreakfastDataset, self).__init__(cfg, train)
 
         data = []
@@ -19,14 +22,25 @@ class C2FTCNBreakfastDataset(BaseDataset):
             video_path = Path(
                 f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.feature_dir}/{video_id}.npy"
             )
-            gt_path = Path(
-                f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.gt_dir}/{video_id}.txt"
-            )
+            if not unsupervised:
+                gt_path = Path(
+                    f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.gt_dir}/{video_id}.txt"
+                )
+            else:
+                gt_path = Path(
+                    f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.pseudo_dir}/{video_id}.txt"
+                )
 
-            with open(gt_path, "r") as f:
-                gt = f.readlines()
-                gt = [line.strip() for line in gt if line.strip() != ""]
-                gt = [self.class_to_int[line] for line in gt]
+            if gt_path.exists():
+                with open(gt_path, "r") as f:
+                    gt = f.readlines()
+                    gt = [line.strip() for line in gt if line.strip() != ""]
+                    gt = [self.class_to_int[line] for line in gt]
+            else:
+                gt = []
+                self.unlabeled.append(video_path)
+                data.append((video_path, np.array(gt, dtype=int), 0, 0))
+                continue
 
             num_frames = len(gt)
             start_frames = []
@@ -82,6 +96,9 @@ class C2FTCNBreakfastDataset(BaseDataset):
             aug_start_frame = start
             aug_end_frame = end
             aug_chunk_size = self.cfg.chunk_size
+
+        if num_frames == 0:
+            return chunks, 0, labels, video_path.stem
 
         count = 0
         for i in range(aug_start_frame, aug_end_frame, aug_chunk_size):
