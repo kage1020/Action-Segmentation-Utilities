@@ -301,6 +301,7 @@ class Visualizer:
         file_path: str = "action_segmentation.mp4",
         backgrounds: list[str] | np.ndarray | Tensor = [],
         mapping: dict[str, int] | None = dict(),
+        reverse_mapping: dict[int, str] | None = dict(),
         num_classes: int = 50,
         show_label: bool = True,
     ):
@@ -322,10 +323,12 @@ class Visualizer:
         text_h = 80 if show_label else 0
         video_size = [img_w, img_h]
 
-        if pred is not None:
-            _pred, mapping = Visualizer.to_np(pred, mapping)
-        if gt is not None:
-            _gt, mapping = Visualizer.to_np(gt, mapping)
+        _pred, mapping = (
+            Visualizer.to_np(pred, mapping) if pred is not None else (None, mapping)
+        )
+        _gt, mapping = (
+            Visualizer.to_np(gt, mapping) if gt is not None else (None, mapping)
+        )
         seg_canvas = Visualizer.plot_action_segmentation(
             pred=_pred,
             gt=_gt,
@@ -335,10 +338,12 @@ class Visualizer:
             mapping=mapping,
             axis=False,
         )
-        seg_h, _, _ = seg_canvas.shape
+        seg_h, seg_w, _ = seg_canvas.shape
         video_size[1] += seg_h
         seg_canvas = cv2.cvtColor(seg_canvas, cv2.COLOR_RGB2BGR)
-        seg_canvas = cv2.resize(seg_canvas, (img_w, seg_h))
+        seg_canvas = cv2.resize(seg_canvas, None, fx=img_w / seg_w, fy=1)
+        bar_width = 5
+        w_scale = img_w * 0.92 / len(images)
 
         if show_label:
             video_size[1] += text_h
@@ -353,8 +358,8 @@ class Visualizer:
 
                 if pred is None or gt is None:
                     seg = seg_canvas.copy()
-                    bar_start = max(i - 1, 0)
-                    bar_end = min(i + 1, len(images) - 1)
+                    bar_start = int(i / len(images) * img_w * 0.94 + 55)
+                    bar_end = min(bar_start + bar_width, len(images) - 1)
                     seg[:, bar_start:bar_end] = [255, 255, 255]
                     image = np.concatenate([image, seg], axis=0)
                 elif pred is not None and gt is not None:
@@ -370,7 +375,7 @@ class Visualizer:
                     if pred is not None and gt is None:
                         cv2.putText(
                             img=text_bar,
-                            text="pred: " + str(_pred[i]),
+                            text="pred: " + reverse_mapping[_pred[i]],
                             org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -380,7 +385,7 @@ class Visualizer:
                     if pred is None and gt is not None:
                         cv2.putText(
                             img=text_bar,
-                            text="gt: " + str(_gt[i]),
+                            text="gt: " + reverse_mapping[_gt[i]],
                             org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -390,7 +395,7 @@ class Visualizer:
                     if pred is not None and gt is not None:
                         cv2.putText(
                             img=text_bar,
-                            text="pred: " + str(_pred[i]),
+                            text="pred: " + reverse_mapping[_pred[i]],
                             org=(img_w // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -399,7 +404,7 @@ class Visualizer:
                         )
                         cv2.putText(
                             img=text_bar,
-                            text="gt: " + str(_gt[i]),
+                            text="gt: " + reverse_mapping[_gt[i]],
                             org=(img_w * 16 // 30, text_h // 4 * 3),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -483,5 +488,7 @@ class Visualizer:
             video_path=self.writer.filename,
             backgrounds=self.backgrounds,
             num_classes=self.num_classes,
+            mapping=mapping,
+            reverse_mapping=self.int_to_text,
         )
         os.remove(self.writer.filename)
