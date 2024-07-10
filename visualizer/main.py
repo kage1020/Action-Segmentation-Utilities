@@ -303,6 +303,7 @@ class Visualizer:
         mapping: dict[str, int] | None = dict(),
         reverse_mapping: dict[int, str] | None = dict(),
         num_classes: int = 50,
+        show_segment: bool = True,
         show_label: bool = True,
     ):
         assert (
@@ -319,30 +320,32 @@ class Visualizer:
                     break
                 images.append(frame)
             cap.release()
+
         img_h, img_w, _ = Visualizer.load_image(images[0]).shape
         text_h = 80 if show_label else 0
         video_size = [img_w, img_h]
 
-        _pred, mapping = (
-            Visualizer.to_np(pred, mapping) if pred is not None else (None, mapping)
-        )
-        _gt, mapping = (
-            Visualizer.to_np(gt, mapping) if gt is not None else (None, mapping)
-        )
-        seg_canvas = Visualizer.plot_action_segmentation(
-            pred=_pred,
-            gt=_gt,
-            confidences=confidences,
-            backgrounds=backgrounds,
-            num_classes=num_classes,
-            mapping=mapping,
-            axis=False,
-        )
-        seg_h, seg_w, _ = seg_canvas.shape
-        video_size[1] += seg_h
-        seg_canvas = cv2.cvtColor(seg_canvas, cv2.COLOR_RGB2BGR)
-        seg_canvas = cv2.resize(seg_canvas, None, fx=img_w / seg_w, fy=1)
-        bar_width = 5
+        if show_segment:
+            _pred, mapping = (
+                Visualizer.to_np(pred, mapping) if pred is not None else (None, mapping)
+            )
+            _gt, mapping = (
+                Visualizer.to_np(gt, mapping) if gt is not None else (None, mapping)
+            )
+            seg_canvas = Visualizer.plot_action_segmentation(
+                pred=_pred,
+                gt=_gt,
+                confidences=confidences,
+                backgrounds=backgrounds,
+                num_classes=num_classes,
+                mapping=mapping,
+                axis=False,
+            )
+            seg_h, seg_w, _ = seg_canvas.shape
+            video_size[1] += seg_h
+            seg_canvas = cv2.cvtColor(seg_canvas, cv2.COLOR_RGB2BGR)
+            seg_canvas = cv2.resize(seg_canvas, None, fx=img_w / seg_w, fy=1)
+            bar_width = 5
         w_scale = img_w * 0.92 / len(images)
 
         if show_label:
@@ -356,7 +359,9 @@ class Visualizer:
             for i in tqdm(range(len(images)), leave=False):
                 image = Visualizer.load_image(images[i])
 
-                if pred is None or gt is None:
+                if pred is None and gt is None:
+                    pass
+                elif pred is None or gt is None:
                     seg = seg_canvas.copy()
                     bar_start = int(i / len(images) * img_w * 0.94 + 55)
                     bar_end = min(bar_start + bar_width, len(images) - 1)
@@ -490,5 +495,6 @@ class Visualizer:
             num_classes=self.num_classes,
             mapping=mapping,
             reverse_mapping=self.int_to_text,
+            show_segment=pred is not None or gt is not None,
         )
         os.remove(self.writer.filename)
