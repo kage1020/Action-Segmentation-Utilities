@@ -23,5 +23,11 @@
         "xticks",
         "ylim",
         "yticks"
-    ]
+    ],
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.terminal.executeInFileDir": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
 }
