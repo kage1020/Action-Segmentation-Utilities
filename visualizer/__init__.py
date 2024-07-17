@@ -1,5 +1,6 @@
 from .main import Visualizer
 from .writer import VideoWriter
+from .reader import VideoReader
 from .palette import (
     cat,
     SLATE10,

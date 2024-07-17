@@ -1,3 +1,4 @@
+import subprocess
 import ffmpeg
 import cv2
 import numpy as np
@@ -5,7 +6,7 @@ from PIL import Image
 
 
 # =========================================
-# This class was created by Yota Yamamoto.
+# This class was created by Yota Yamamoto and modified for type safety by me.
 # Thanks for sharing this code!
 # =========================================
 class VideoWriter:
@@ -32,7 +33,7 @@ class VideoWriter:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.out is not None:
+        if self.out is not None and self.out.stdin is not None:
             self.out.stdin.close()
             self.out.wait()
 
@@ -51,7 +52,7 @@ class VideoWriter:
             np.array(image), (new_width, new_height), interpolation=cv2.INTER_LANCZOS4
         )
 
-    def openpipe(self, size, pix_fmt_in):
+    def openpipe(self, size, pix_fmt_in) -> subprocess.Popen:
         width, height = size
         fps = self.framerate
         quality = self.quality
@@ -77,7 +78,8 @@ class VideoWriter:
         )
 
     def write(self, image):
-        self.out.stdin.write(np.array(image).tobytes())
+        if self.out is not None and self.out.stdin is not None:
+            self.out.stdin.write(np.array(image).tobytes())
 
     def update(self, image):
         if isinstance(image, Image.Image):
@@ -98,7 +100,7 @@ class VideoWriter:
             )
             out_height, out_width, _ = out_image.shape
         else:
-            out_image = image
+            out_image = np.array(image)
             out_height, out_width = orig_height, orig_width
 
         out_height = out_height - (out_height % 2)

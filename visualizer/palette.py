@@ -9,9 +9,14 @@ def cat(num_classes: int, palettes: list) -> list:
     return palettes
 
 
-def hex_to_rgb(_hex) -> tuple[float, float, float]:
+def hex_to_rgba(_hex) -> tuple[float, float, float, float]:
     _hex = _hex.lstrip("#")
-    return tuple(int(_hex[i : i + 2], 16) / 255 for i in (0, 2, 4))
+    return (
+        int(_hex[0:2], 16) / 255,
+        int(_hex[2:4], 16) / 255,
+        int(_hex[4:6], 16) / 255,
+        1,
+    )
 
 
 SLATE10 = [
@@ -302,7 +307,7 @@ ROSE10 = [
 
 DA_SEA10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#e8f1fe",
             "#c5d7fb",
@@ -320,7 +325,7 @@ DA_SEA10 = list(
 
 DA_BLUE10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#c5d7fb",
             "#9db7f9",
@@ -338,7 +343,7 @@ DA_BLUE10 = list(
 
 DA_LIGHTBLUE10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#c0e4ff",
             "#97d3ff",
@@ -356,7 +361,7 @@ DA_LIGHTBLUE10 = list(
 
 DA_CYAN10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#e9f7f9",
             "#79e2f2",
@@ -374,7 +379,7 @@ DA_CYAN10 = list(
 
 DA_GREEN10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#c2e5d1",
             "#9bd4b5",
@@ -392,7 +397,7 @@ DA_GREEN10 = list(
 
 DA_LIME10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#ebfad9",
             "#ade830",
@@ -410,7 +415,7 @@ DA_LIME10 = list(
 
 DA_YELLOW10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#fbf5e0",
             "#ffd43d",
@@ -428,7 +433,7 @@ DA_YELLOW10 = list(
 
 DA_ORANGE10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#ffeee2",
             "#ffc199",
@@ -446,7 +451,7 @@ DA_ORANGE10 = list(
 
 DA_RED10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#fdeeee",
             "#ffbbbb",
@@ -464,7 +469,7 @@ DA_RED10 = list(
 
 DA_MAGENTA10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#ffaeff",
             "#ff8eff",
@@ -482,7 +487,7 @@ DA_MAGENTA10 = list(
 
 DA_PURPLE10 = list(
     map(
-        hex_to_rgb,
+        hex_to_rgba,
         [
             "#ddc2ff",
             "#cda6ff",
