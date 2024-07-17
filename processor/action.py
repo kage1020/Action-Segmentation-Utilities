@@ -4,7 +4,7 @@ from pathlib import Path
 from collections import OrderedDict
 from tqdm import tqdm
 
-# add config type
+# TODO: add config type
 
 
 def create_actions(cfg):

@@ -1,1 +1,1 @@
-from .main import Base
+from .main import Base, Config
