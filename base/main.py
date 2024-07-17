@@ -6,6 +6,8 @@ import numpy as np
 import torch
 from torch.nn import Module
 
+from logger import Logger
+
 from numpy import ndarray
 from torch import Tensor
 
@@ -35,6 +37,8 @@ class Base:
         matching_separator: str = " ",
         backgrounds: list[str] = [],
     ):
+        self.logger = Logger()
+
         if mapping_path is not None:
             self.set_class_mapping(
                 mapping_path, has_header=has_mapping_header, separator=mapping_separator

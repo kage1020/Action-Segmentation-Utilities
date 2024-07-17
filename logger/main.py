@@ -12,7 +12,7 @@ class Color:
 
 class Logger(logging.Logger):
     def __init__(self):
-        super(Logger, self).__init__()
+        super(Logger, self).__init__(name=__name__)
         self.logger = logging.getLogger(__name__)
 
     def info(self, message: str | dict | list | object):
