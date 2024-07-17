@@ -6,7 +6,7 @@ from torch import Tensor
 
 
 def upsize(x: Tensor, size: int):
-    return F.upsize(x, size=size, mode="linear", align_corners=True)
+    return F.interpolate(x, size=size, mode="linear", align_corners=True)
 
 
 class DoubleConv(nn.Module):
@@ -72,7 +72,7 @@ class Up(nn.Module):
 
     def forward(self, x1: Tensor, x2: Tensor) -> Tensor:
         x1 = self.up(x1)
-        diff = torch.tensor([x2.size()[2] - x1.size()[2]])
+        diff = x2.size()[2] - x1.size()[2]
 
         x1 = F.pad(x1, [diff // 2, diff - diff // 2])
         x = torch.cat([x2, x1], dim=1)

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch import Tensor
 import math
 from copy import deepcopy
+from einops import rearrange
 
 
 class PositionalEncoding(nn.Module):
@@ -21,7 +22,7 @@ class PositionalEncoding(nn.Module):
         )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).permute(0, 2, 1)
+        pe = rearrange(pe, "l d -> 1 d l")
         self.pe = nn.Parameter(pe, requires_grad=True)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -136,7 +137,7 @@ class AttentionLayer(nn.Module):
 
         self.window_mask = self._construct_window_mask()
 
-    def _construct_window_mask(self) -> torch.Tensor:
+    def _construct_window_mask(self) -> Tensor:
         """
         Returns:
             window_mask: (1, dilation, dilation + 2 * (dilation // 2))
@@ -198,35 +199,17 @@ class AttentionLayer(nn.Module):
             dim=-1,
         )
 
-        q = (
-            q.reshape(B, c1, nb, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B * nb, c1, self.dilation)
+        q = rearrange(q, "b c (n d) -> (b n) c d", n=nb, d=self.dilation)
+        padding_mask = rearrange(
+            padding_mask, "b 1 (n d) -> (b n) 1 d", n=nb, d=self.dilation
         )
-        padding_mask = (
-            padding_mask.reshape(B, 1, nb, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B * nb, 1, self.dilation)
-        )
-        k = (
-            k.reshape(B, c2, nb, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B * nb, c2, self.dilation)
-        )
-        v = (
-            v.reshape(B, c3, nb, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B * nb, c3, self.dilation)
-        )
+        k = rearrange(k, "b c (n d) -> (b n) c d", n=nb, d=self.dilation)
+        v = rearrange(v, "b c (n d) -> (b n) c d", n=nb, d=self.dilation)
 
         output = self.dot(q, k, v, padding_mask)
         output = self.conv_out(F.relu(output))
 
-        output = (
-            output.reshape(B, nb, c3, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B, c3, nb * self.dilation)
-        )
+        output = rearrange(output, "(b n) c d -> b c (n d)", n=nb, d=self.dilation)
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
 
@@ -286,11 +269,7 @@ class AttentionLayer(nn.Module):
 
         # sliding window approach, by splitting query and key into shape (c1, l) x (c1, 2l)
         # sliding window for query_proj: reshape
-        q = (
-            q.reshape(B, c1, num_block, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B * num_block, c1, self.dilation)
-        )
+        q = rearrange(q, "b c (n d) -> (b n) c d", n=num_block, d=self.dilation)
         # sliding window approach for key
         # 1. add paddings at the start and end
         k = torch.cat(
@@ -364,10 +343,8 @@ class AttentionLayer(nn.Module):
         output = self.dot(q, k, v, final_mask)
         output: torch.Tensor = self.conv_out(F.relu(output))
 
-        output = (
-            output.reshape(B, num_block, -1, self.dilation)
-            .permute(0, 2, 1, 3)
-            .reshape(B, -1, num_block * self.dilation)
+        output = rearrange(
+            output, "(b n) c d -> b c (n d)", n=num_block, d=self.dilation
         )
         output = output[:, :, 0:T]
         return output * mask[:, 0:1, :]
@@ -396,6 +373,8 @@ class AttentionLayer(nn.Module):
             return self._block_wise_att(query, key, value, mask)
         elif self.att_type == "sliding_att":
             return self._sliding_window_att(query, key, value, mask)
+        else:
+            raise ValueError("Invalid attention type")
 
     def dot(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         """
