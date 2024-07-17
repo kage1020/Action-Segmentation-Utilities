@@ -1,3 +1,4 @@
+from functools import partial
 from dataclasses import dataclass
 import math
 import torch
@@ -149,9 +150,9 @@ class MultiHeadAttention(nn.Module):
         self.requires_input_projection = requires_input_projection
         self.use_conv1d_proj = use_conv1d_proj
         if use_conv1d_proj:
-            LinearProj = nn.Conv1d(bias=bias, kernel_size=1)
+            LinearProj = partial(nn.Conv1d, bias=bias, kernel_size=1)
         else:
-            LinearProj = nn.Linear(bias=bias)
+            LinearProj = partial(nn.Linear, bias=bias)
         if use_separate_proj_weight:
             self.proj_q = LinearProj(model_dim, dim_key)
             self.proj_k = LinearProj(model_dim, dim_key)
@@ -360,7 +361,7 @@ class BaseAttention(nn.Module):
         return patches, padding_mask
 
     def pad_sequence(
-        x: Tensor, pad_size: int | tuple[int, int], masks: Tensor | None = None
+        self, x: Tensor, pad_size: int | tuple[int, int], masks: Tensor | None = None
     ) -> tuple[Tensor, Tensor]:
         """
          Pad the sequence to have a length of as the given size
@@ -385,7 +386,7 @@ class BaseAttention(nn.Module):
         padding_mask = F.pad(masks, pad=pad_size, value=False)
         return padded_x, padding_mask
 
-    def patchify(ts: Tensor, patch_size: int, stride: int) -> Tensor:
+    def patchify(self, ts: Tensor, patch_size: int, stride: int) -> Tensor:
         """
         Convert a tensor into patches (windows) of size 'window_size' with overlap of 'stride'
 
@@ -599,7 +600,7 @@ class LTCBlock(nn.Module):
         dropout_prob: float,
         attention_dropout_prob: float,
     ):
-        super(LTCBlock, self).__init__()
+        super().__init__()
         self.dilated_conv = DilatedConv(
             n_channels=model_dim, dilation=dilation, kernel_size=3
         )
@@ -665,7 +666,7 @@ class LTCModule(nn.Module):
         channel_dropout_prob: float,
         attention_dropout_prob: float,
     ):
-        super(LTCModule, self).__init__()
+        super().__init__()
         self.channel_dropout = nn.Dropout1d(channel_dropout_prob)
         self.input_proj = nn.Conv1d(input_dim, model_dim, kernel_size=1, bias=True)
         self.layers = nn.ModuleList(
@@ -706,7 +707,7 @@ class LTCModule(nn.Module):
 
 class LTC(nn.Module):
     def __init__(self, cfg: Config):
-        super(LTC, self).__init__()
+        super().__init__()
         self.stage1 = LTCModule(
             num_layers=cfg.LTC.NUM_LAYERS,
             num_classes=cfg.NUM_CLASSES,

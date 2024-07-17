@@ -14,7 +14,7 @@ class PositionalEncoding(nn.Module):
             d_model: dimension of model
             max_len: maximum length of sequence
         """
-        super(PositionalEncoding, self).__init__()
+        super().__init__()
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len).unsqueeze(1)
         div_term = torch.exp(
@@ -45,7 +45,7 @@ class ConvFeedForward(nn.Module):
         Returns:
             out: (batch size, feature map dimension, number of frames)
         """
-        super(ConvFeedForward, self).__init__()
+        super().__init__()
         self.layer = nn.Sequential(
             nn.Conv1d(
                 in_channels, out_channels, 3, dilation=dilation, padding=dilation
@@ -71,7 +71,7 @@ class FCFeedForward(nn.Module):
             in_channels: number of input channels
             out_channels: number of output channels
         """
-        super(FCFeedForward, self).__init__()
+        super().__init__()
         self.layer = nn.Sequential(
             nn.Conv1d(in_channels, out_channels, 1),
             nn.ReLU(),
@@ -115,7 +115,7 @@ class AttentionLayer(nn.Module):
             att_type: type of attention, it can be 'encoder' or 'decoder'
             stage: stage of the model, it can be 'normal_att', 'block_att', 'sliding_att'
         """
-        super(AttentionLayer, self).__init__()
+        super().__init__()
         assert stage in ["encoder", "decoder"]
         assert att_type in ["normal_att", "block_att", "sliding_att"]
         self.query_conv = nn.Conv1d(
@@ -428,7 +428,7 @@ class MultiHeadAttentionLayer(nn.Module):
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             num_head: number of heads
         """
-        super(MultiHeadAttentionLayer, self).__init__()
+        super().__init__()
         assert v_dim % num_head == 0
         assert stage in ["encoder", "decoder"]
         assert att_type in ["normal_att", "block_att", "sliding_att"]
@@ -485,7 +485,7 @@ class AttentionModule(nn.Module):
             stage: stage of the model, it can be 'encoder' or 'decoder'
             alpha: hyperparameter for residual connection in encoder's attention module
         """
-        super(AttentionModule, self).__init__()
+        super().__init__()
         self.feed_forward = ConvFeedForward(dilation, in_channels, out_channels)
         self.norm = nn.InstanceNorm1d(in_channels, track_running_stats=False)
         self.att_layer = AttentionLayer(
@@ -561,7 +561,7 @@ class Encoder(nn.Module):
             out: (batch size, number of action classes, number of frames)
             feature: (batch size, feature map dimension, number of frames)
         """
-        super(Encoder, self).__init__()
+        super().__init__()
         self.conv_1x1 = nn.Conv1d(input_dim, num_f_maps, 1)
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
         self.layers = nn.ModuleList(
@@ -631,7 +631,7 @@ class Decoder(nn.Module):
             att_type: type of attention, it can be 'normal_att', 'block_att', 'sliding_att'
             alpha: hyperparameter for residual connection in encoder's attention module
         """
-        super(Decoder, self).__init__()
+        super().__init__()
         self.conv_1x1 = nn.Conv1d(input_dim, num_f_maps, 1)
         self.conv_out = nn.Conv1d(num_f_maps, num_classes, 1)
         self.layers = nn.ModuleList(
@@ -696,7 +696,7 @@ class ASFormer(nn.Module):
             alpha: hyperparameter for residual connection in encoder's attention module
             p: hyperparameter for exponential decrease of alpha in decoder's attention module
         """
-        super(ASFormer, self).__init__()
+        super().__init__()
         self.encoder = Encoder(
             num_layers,
             r1,

@@ -21,9 +21,9 @@ class Base:
 
     def __init__(
         self,
-        mapping_path: str,
-        actions_path: str,
-        matching_path: str,
+        mapping_path: str | None = None,
+        actions_path: str | None = None,
+        matching_path: str | None = None,
         has_mapping_header: bool = False,
         mapping_separator: str = " ",
         has_actions_header: bool = False,
@@ -32,17 +32,20 @@ class Base:
         matching_separator: str = " ",
         backgrounds: list[str] = [],
     ):
-        self.set_class_mapping(
-            mapping_path, has_header=has_mapping_header, separator=mapping_separator
-        )
-        self.set_actions(
-            actions_path,
-            has_header=has_actions_header,
-            action_separator=actions_action_separator,
-            class_separator=actions_class_separator,
-        )
-        self.set_action_matching(matching_path, separator=matching_separator)
-        self.backgrounds = [self.text_to_int[c] for c in backgrounds]
+        if mapping_path is not None:
+            self.set_class_mapping(
+                mapping_path, has_header=has_mapping_header, separator=mapping_separator
+            )
+            self.backgrounds = [self.text_to_int[c] for c in backgrounds]
+        if actions_path is not None:
+            self.set_actions(
+                actions_path,
+                has_header=has_actions_header,
+                action_separator=actions_action_separator,
+                class_separator=actions_class_separator,
+            )
+        if matching_path is not None:
+            self.set_action_matching(matching_path, separator=matching_separator)
 
     @staticmethod
     def to_np(x: list | ndarray | Tensor | None) -> ndarray:

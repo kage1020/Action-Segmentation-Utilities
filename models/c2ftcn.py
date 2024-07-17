@@ -11,7 +11,7 @@ def upsize(x: Tensor, size: int):
 
 class DoubleConv(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
-        super(DoubleConv, self).__init__()
+        super().__init__()
         self.conv = nn.Sequential(
             nn.Conv1d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm1d(out_channels),
@@ -28,7 +28,7 @@ class DoubleConv(nn.Module):
 
 class InConv(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(InConv, self).__init__()
+        super().__init__()
         self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -38,7 +38,7 @@ class InConv(nn.Module):
 
 class OutConv(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
-        super(OutConv, self).__init__()
+        super().__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size=1)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -48,7 +48,7 @@ class OutConv(nn.Module):
 
 class Down(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
-        super(Down, self).__init__()
+        super().__init__()
         self.max_pool_conv = nn.Sequential(
             nn.MaxPool1d(2),
             DoubleConv(in_channels, out_channels),
@@ -61,7 +61,7 @@ class Down(nn.Module):
 
 class Up(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, bilinear: bool = True):
-        super(Up, self).__init__()
+        super().__init__()
         if bilinear:
             self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         else:
@@ -82,7 +82,7 @@ class Up(nn.Module):
 
 class SPPBlock(nn.Module):
     def __init__(self, in_channels: int):
-        super(SPPBlock, self).__init__()
+        super().__init__()
         self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
         self.pool2 = nn.MaxPool1d(kernel_size=3, stride=3)
         self.pool3 = nn.MaxPool1d(kernel_size=5, stride=5)
@@ -116,7 +116,7 @@ class C2F_TCN(nn.Module):
             num_classes: number of classes in the output data
             num_features: number of features in the output data
         """
-        super(C2F_TCN, self).__init__()
+        super().__init__()
         self.inconv = InConv(num_channels, 256)
         self.down1 = Down(256, 256)
         self.down2 = Down(256, 256)
