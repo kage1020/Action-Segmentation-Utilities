@@ -137,6 +137,27 @@ class Base:
         image_paths = Base.get_image_paths(img_dir)
         return [Base.load_image(img_path) for img_path in image_paths]
 
+    @staticmethod
+    def get_class_mapping(
+        mapping_path: str, has_header: bool = False, separator: str = " "
+    ) -> tuple[dict[str, int], dict[int, str]]:
+        with open(mapping_path, "r") as f:
+            lines = f.readlines()
+        if has_header:
+            lines = lines[1:]
+
+        text_to_int = {}
+        int_to_text = {}
+        for line in lines:
+            text, idx = line.strip().split(separator)
+            try:
+                idx = int(idx)
+            except ValueError:
+                text, idx = idx, int(text)
+            text_to_int[text] = idx
+            int_to_text[idx] = text
+        return text_to_int, int_to_text
+
     def set_class_mapping(
         self, mapping_path: str, has_header: bool = False, separator: str = " "
     ) -> None:
@@ -175,6 +196,26 @@ class Base:
     def mask_mapping_with_backgrounds(self, mask_value: int = -100) -> None:
         for c in self.backgrounds:
             self.text_to_int[self.int_to_text[c]] = mask_value
+
+    @staticmethod
+    def get_actions(
+        actions_path: str,
+        has_header: bool = False,
+        action_separator: str = " ",
+        class_separator: str = ",",
+        text_to_int: dict[str, int] = dict(),
+    ) -> dict[str, list[int]]:
+        with open(actions_path, "r") as f:
+            lines = f.readlines()
+            lines = [line.strip() for line in lines if line.strip() != ""]
+        if has_header:
+            lines = lines[1:]
+
+        actions = {}
+        for line in lines:
+            action, classes = line.split(action_separator)
+            actions[action] = [text_to_int[c] for c in classes.split(class_separator)]
+        return actions
 
     def set_actions(
         self,

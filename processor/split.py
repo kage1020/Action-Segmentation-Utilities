@@ -4,14 +4,14 @@ from pathlib import Path
 import numpy as np
 from sklearn.model_selection import KFold
 
-from utils import init_seed
-from loader import get_actions
-from manager import Config
+from base import Base
+
+# TODO: add config type
 
 
-def shuffle_split(cfg: Config):
-    init_seed(cfg.seed)
-    actions = get_actions(f"{cfg.base_dir}/{cfg.dataset}/actions.txt")
+def shuffle_split(cfg):
+    Base.init_seed(cfg.seed)
+    actions = Base.get_actions(f"{cfg.base_dir}/{cfg.dataset}/actions.txt")
     kfold = KFold(n_splits=cfg.num_fold, shuffle=True, random_state=cfg.seed)
     os.makedirs(f"{cfg.base_dir}/{cfg.dataset}/{cfg.split_dir}", exist_ok=True)
 
