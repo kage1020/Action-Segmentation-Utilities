@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import torch
 from torch.nn import Module
+from omegaconf import DictConfig
 
 from logger import Logger
 
@@ -13,8 +14,37 @@ from torch import Tensor
 
 
 @dataclass()
-class Config:
+class Config(DictConfig):
+    # system
+    seed: int
     device: str
+    verbose: bool
+    val_skip: bool
+
+    # dataset
+    dataset: str
+    split: int
+    num_fold: int
+    backgrounds: list[str]
+    batch_size: int
+    shuffle: bool
+    base_dir: str
+    split_dir: str
+    gt_dir: str
+    feature_dir: str
+    prob_dir: str | None
+    pseudo_dir: str | None
+    semi_per: float | None
+
+    # learning
+    train: bool
+    model_name: str
+    model_dir: str
+    result_dir: str
+    epochs: int
+    lr: float
+    weight_decay: float
+    mse_weight: float | None
 
 
 class Base:
@@ -63,6 +93,10 @@ class Base:
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         torch.cuda.manual_seed(seed)
+
+    @staticmethod
+    def validate_config(cfg: Config):
+        return cfg
 
     @staticmethod
     def load_model(model: Module, model_path: str, device="cpu"):

@@ -1,2 +1,2 @@
-from .hydra import HydraManager, Config
+from .hydra import HydraManager
 from .mlflow import MLFlowManager

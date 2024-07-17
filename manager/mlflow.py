@@ -8,7 +8,9 @@ class MLFlowManager:
 
     def __enter__(self):
         if self.client.get_experiment_by_name(self.name):
-            self.id = self.client.get_experiment_by_name(self.name).experiment_id
+            experiment = self.client.get_experiment_by_name(self.name)
+            if experiment:
+                self.id = experiment.experiment_id
         else:
             self.id = self.client.create_experiment(self.name)
         self.run_id = self.client.create_run(self.id).info.run_id
