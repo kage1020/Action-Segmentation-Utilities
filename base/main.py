@@ -99,12 +99,14 @@ class Base:
         return cfg
 
     @staticmethod
-    def load_model(model: Module, model_path: str, device="cpu"):
+    def load_model(model: Module, model_path: str, device: torch.device | str = "cpu"):
         model.load_state_dict(torch.load(model_path, map_location=device))
         return model
 
     @staticmethod
-    def load_best_model(model: Module, model_dir: str, device="cpu"):
+    def load_best_model(
+        model: Module, model_dir: str, device: torch.device | str = "cpu"
+    ):
         model_paths = glob.glob(f"{model_dir}/*")
         model_paths.sort()
         best_model = next(filter(lambda x: "best" in x, model_paths), None)

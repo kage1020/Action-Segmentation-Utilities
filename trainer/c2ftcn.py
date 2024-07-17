@@ -7,10 +7,12 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
+
+from base import Config, Base
 from .main import Trainer
-from manager import Config
-from utils import save_model, load_best_model
 from loader import C2FTCNBreakfastDataLoader
+
+# TODO: modify
 
 
 class C2FTCNConfig(Config):
@@ -70,7 +72,7 @@ class C2FTCNCriterion(Module):
             num_frames = count[j]
 
             split_frames = torch.linspace(
-                0, num_frames, self.cfg.num_samples_frames, dtype=int
+                0, num_frames, self.cfg.num_samples_frames, dtype=torch.int
             )
             idx = []
             for k in range(len(split_frames) - 1):
@@ -80,7 +82,7 @@ class C2FTCNCriterion(Module):
                 idx.append(np.random.choice(list_frames, 1)[0])
 
             idx = torch.tensor(idx).type(torch.long).to(pred.device)
-            idx = torch.clamp(idx, 0, num_frames - 1)
+            idx = torch.clamp(idx, 0, int(num_frames) - 1)
 
             v_low = int(np.ceil(self.cfg.epsilon_l * num_frames.item()))
             v_high = int(np.ceil(self.cfg.epsilon * num_frames.item()))
@@ -91,13 +93,13 @@ class C2FTCNCriterion(Module):
                 .type(torch.long)
                 .to(pred.device)
             )
-            prev_idx = torch.clamp(idx - offset, 0, num_frames - 1)
+            prev_idx = torch.clamp(idx - offset, 0, int(num_frames) - 1)
 
             f1.append(pred[j].permute(1, 0)[idx, :])
             f1.append(pred[j].permute(1, 0)[prev_idx, :])
 
             if activity_labels is not None:
-                feature_activity.extend([activity_labels[j]] * len(idx) * 2)
+                feature_activity.extend([activity_labels[j]] * len(idx) * 2)  # type: ignore
             else:
                 feature_activity = None
 
@@ -174,7 +176,7 @@ class C2FTCNCriterion(Module):
             feature_contrast_loss = 0
         else:
             feat_sim_pos = pos_weight_mat * f11
-            max_val = torch.max(not_same_activity * f11, dim=1, keep_dim=True)[0]
+            max_val = torch.max(not_same_activity * f11, dim=1, keep_dim=True)[0]  # type: ignore
             acc = torch.sum(feat_sim_pos > max_val) / count_pos
             feat_sim_neg_sum = torch.sum(not_same_activity * f11, dim=1)
 
@@ -311,8 +313,14 @@ class C2FTCNTrainer(Trainer):
         schedulers: C2FTCNScheduler,
         evaluator,
     ):
-        super(C2FTCNTrainer, self).__init__(
-            cfg, logger, model, criterion, None, None, evaluator
+        super().__init__(
+            cfg,
+            logger,
+            model,
+            criterion,
+            None,  # type: ignore
+            None,  # type: ignore
+            evaluator,
         )
         self.cfg = cfg
         self.optimizers = optimizers
@@ -320,13 +328,14 @@ class C2FTCNTrainer(Trainer):
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
+        self.evaluator = evaluator
 
     def dump_gt_labels(self):
         os.makedirs(
             f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/gt",
             exist_ok=True,
         )
-        for video_path, gt, _, _ in self.train_loader.dataset.videos:
+        for video_path, gt, _, _ in self.train_loader.dataset.videos:  # type: ignore
             if len(gt) == 0:
                 continue
 
@@ -429,7 +438,7 @@ class C2FTCNTrainer(Trainer):
             )
 
             if (epoch + 1) % (self.cfg.epochs // 10) == 0:
-                save_model(
+                Base.save_model(
                     self.model,
                     f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch-{epoch+1}.model",
                 )
@@ -438,7 +447,7 @@ class C2FTCNTrainer(Trainer):
                 self.best_acc = acc
                 self.best_edit = edit
                 self.best_f1 = f1
-                save_model(
+                Base.save_model(
                     self.model,
                     f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best.model",
                 )
@@ -521,9 +530,9 @@ class C2FTCNTrainer(Trainer):
 
     def train(self, train_loader, test_loader):
         for iter_n in range(self.cfg.start_iter, self.cfg.num_iter + 1):
-            self.train_supervised(train_loader)
+            self.train_supervised(train_loader, test_loader)
 
-            self.model = load_best_model(
+            self.model = Base.load_best_model(
                 self.model,
                 f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models",
                 self.device,
@@ -533,18 +542,14 @@ class C2FTCNTrainer(Trainer):
             unlabeled_loader = DataLoader(
                 unlabeled_videos, batch_size=1, shuffle=False, num_workers=4
             )
-            self.dump_gt_labels(train_loader)
+            self.dump_gt_labels()
             self.dump_labels(unlabeled_loader)
 
             if iter_n == self.cfg.num_iter:
                 break
 
-            unsupervised_train_loader = C2FTCNBreakfastDataLoader(
-                self.cfg, train=True, unsupervised=True
-            )
-            unsupervised_test_loader = C2FTCNBreakfastDataLoader(
-                self.cfg, train=False, unsupervised=True
-            )
+            unsupervised_train_loader = C2FTCNBreakfastDataLoader(self.cfg, train=True)
+            unsupervised_test_loader = C2FTCNBreakfastDataLoader(self.cfg, train=False)
             self.train_unsupervised(unsupervised_train_loader)
 
         #     if (epoch + 1) % 10 == 0:

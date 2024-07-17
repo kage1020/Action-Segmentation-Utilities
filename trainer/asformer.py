@@ -2,10 +2,13 @@ import torch
 from torch import Tensor
 from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
-from torch.optim import Optimizer, Adam
-from torch.optim.lr_scheduler import LRScheduler
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+from base import Config
 from .main import Trainer
-from manager import Config
+
+# TODO: modify
 
 
 class ASFormerConfig(Config):
@@ -19,7 +22,7 @@ class ASFormerCriterion(Module):
         self.num_classes = num_classes
         self.mse_weight = mse_weight
 
-    def forward(self, pred: Tensor, labels: Tensor, mask: Tensor):
+    def forward(self, pred: Tensor, labels: Tensor, mask: Tensor) -> Tensor:
         loss = self.ce(
             pred.transpose(2, 1).contiguous().view(-1, self.num_classes),
             labels.view(-1),
@@ -36,14 +39,14 @@ class ASFormerCriterion(Module):
 
 class ASFormerOptimizer(Adam):
     def __init__(self, model: Module, lr: float, weight_decay: float):
-        super(ASFormerOptimizer, self).__init__(
-            model.parameters(), lr=lr, weight_decay=weight_decay
-        )
+        super().__init__(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
-class ASFormerScheduler(LRScheduler):
-    def __init__(self, optimizer: Optimizer, mode: str, factor: float, patience: int):
-        super(ASFormerScheduler, self).__init__(
+class ASFormerScheduler(ReduceLROnPlateau):
+    def __init__(
+        self, optimizer: ASFormerOptimizer, mode: str, factor: float, patience: int
+    ):
+        super().__init__(
             optimizer, mode=mode, factor=factor, patience=patience, verbose=True
         )
 
@@ -54,9 +57,9 @@ class ASFormerTrainer(Trainer):
         cfg,
         logger,
         model: Module,
-        criterion: Module,
-        optimizer: Optimizer,
-        scheduler: LRScheduler,
+        criterion: ASFormerCriterion,
+        optimizer: ASFormerOptimizer,
+        scheduler: ASFormerScheduler,
         evaluator,
     ):
         super(ASFormerTrainer, self).__init__(
@@ -65,13 +68,14 @@ class ASFormerTrainer(Trainer):
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
+        self.evaluator = evaluator
 
     def train(self, train_loader, test_loader):
         self.model.to(self.device)
 
         for epoch in range(self.cfg.epochs):
             self.model.train()
-            epoch_loss = 0
+            epoch_loss: float = 0
 
             for features, mask, labels in train_loader:
                 features = features.to(self.device)
@@ -80,7 +84,7 @@ class ASFormerTrainer(Trainer):
                 self.optimizer.zero_grad()
 
                 outputs = self.model(features, mask)
-                loss = 0
+                loss: Tensor = torch.tensor(0)
                 for output in outputs:
                     loss += self.criterion(output, labels)
                 epoch_loss += loss.item()
@@ -112,7 +116,7 @@ class ASFormerTrainer(Trainer):
                     f"{self.cfg.base_dir}/{self.cfg.result_dir}/best.model",
                 )
             self.train_evaluator.reset()
-            self.scheduler.step(epoch_loss)
+            self.scheduler.step(epoch)
 
             if self.cfg.val_skip:
                 continue

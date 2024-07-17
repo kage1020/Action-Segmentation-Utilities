@@ -3,10 +3,12 @@ from torch.nn import Module
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from copy import deepcopy
-from manager import Config
-from utils import init_seed
+
+from base import Base, Config
 from logger import Logger
 from evaluator import Evaluator
+
+# TODO: modify
 
 
 class Trainer:
@@ -34,7 +36,7 @@ class Trainer:
         self.test_evaluator = deepcopy(evaluator)
         self.best_score = 0
 
-        init_seed(cfg.seed)
+        Base.init_seed(cfg.seed)
 
     def train(self, train_loader, test_loader):
         self.model.to(self.device)
@@ -67,8 +69,8 @@ class Trainer:
                 self.model.state_dict(),
                 f"{self.cfg.base_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
             )
-            if score > self.best_score:
-                self.best_score = score
+            if score[0] > self.best_score:
+                self.best_score = score[0]
                 torch.save(
                     self.model.state_dict(),
                     f"{self.cfg.base_dir}/{self.cfg.result_dir}/best.model",
