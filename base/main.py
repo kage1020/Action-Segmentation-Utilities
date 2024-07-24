@@ -22,11 +22,21 @@ class Config(DictConfig):
     val_skip: bool
 
     # dataset
+    mapping_path: str | None
+    actions_path: str | None
+    matching_path: str | None
+    has_mapping_header: bool | None
+    mapping_separator: str | None
+    has_actions_header: bool | None
+    actions_action_separator: str | None
+    actions_class_separator: str | None
+    matching_separator: str | None
     dataset: str
     split: int
     num_fold: int
     backgrounds: list[str]
     batch_size: int
+    sampling_rate: int
     shuffle: bool
     base_dir: str
     split_dir: str
@@ -59,30 +69,30 @@ class Base:
         mapping_path: str | None = None,
         actions_path: str | None = None,
         matching_path: str | None = None,
-        has_mapping_header: bool = False,
-        mapping_separator: str = " ",
-        has_actions_header: bool = False,
-        actions_action_separator: str = " ",
-        actions_class_separator: str = ",",
-        matching_separator: str = " ",
+        has_mapping_header: bool | None = False,
+        mapping_separator: str | None = " ",
+        has_actions_header: bool | None = False,
+        actions_action_separator: str | None = " ",
+        actions_class_separator: str | None = ",",
+        matching_separator: str | None = " ",
         backgrounds: list[str] = [],
     ):
         self.logger = Logger()
 
         if mapping_path is not None:
             self.set_class_mapping(
-                mapping_path, has_header=has_mapping_header, separator=mapping_separator
+                mapping_path, has_header=has_mapping_header or False, separator=mapping_separator or " "
             )
             self.backgrounds = [self.text_to_int[c] for c in backgrounds]
         if actions_path is not None:
             self.set_actions(
                 actions_path,
-                has_header=has_actions_header,
-                action_separator=actions_action_separator,
-                class_separator=actions_class_separator,
+                has_header=has_actions_header or False,
+                action_separator=actions_action_separator or " ",
+                class_separator=actions_class_separator or ","
             )
         if matching_path is not None:
-            self.set_action_matching(matching_path, separator=matching_separator)
+            self.set_action_matching(matching_path, separator=matching_separator or " ")
 
     @staticmethod
     def init_seed(seed: int = 42):
@@ -93,6 +103,10 @@ class Base:
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         torch.cuda.manual_seed(seed)
+
+    @staticmethod
+    def get_device(cuda: int = 0) -> torch.device:
+        return torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
     def validate_config(cfg: Config):
