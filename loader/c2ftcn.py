@@ -3,7 +3,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from .main import DatasetConfig, BaseDataset
+from base import Config
+from .main import BaseDataset
 
 
 class C2FTCNBreakfastDataset(BaseDataset):
@@ -11,9 +12,7 @@ class C2FTCNBreakfastDataset(BaseDataset):
     smallest_cut = 1.0
     unlabeled = []
 
-    def __init__(
-        self, cfg: DatasetConfig, train: bool = True, unsupervised: bool = False
-    ):
+    def __init__(self, cfg: Config, train: bool = True, unsupervised: bool = False):
         super(C2FTCNBreakfastDataset, self).__init__(cfg, train)
 
         data = []
@@ -35,7 +34,7 @@ class C2FTCNBreakfastDataset(BaseDataset):
                 with open(gt_path, "r") as f:
                     gt = f.readlines()
                     gt = [line.strip() for line in gt if line.strip() != ""]
-                    gt = [self.class_to_int[line] for line in gt]
+                    gt = [self.text_to_int[line] for line in gt]
             else:
                 gt = []
                 self.unlabeled.append(video_path)
@@ -49,7 +48,7 @@ class C2FTCNBreakfastDataset(BaseDataset):
                 0, num_frames, self.cfg.max_frames_per_video * self.cfg.chunk_size
             ):
                 start_frames.append(start)
-                max_end = start + (self.max_frames_per_video * self.cfg.chunk_size)
+                max_end = start + (self.cfg.max_frames_per_video * self.cfg.chunk_size)
                 end_frames.append(max_end if max_end < num_frames else num_frames)
 
             for start, end in zip(start_frames, end_frames):
@@ -66,7 +65,7 @@ class C2FTCNBreakfastDataset(BaseDataset):
         chunks = torch.zeros((self.cfg.max_frames_per_video, self.cfg.feature_size))
         labels = torch.ones(self.cfg.max_frames_per_video, dtype=torch.long) * -100
 
-        do_augmentation = (not self.train) and np.random.randint(low=0, height=2) == 0
+        do_augmentation = (not self.phase) and np.random.randint(0, 2) == 0
         if do_augmentation:
             aug_start = np.random.uniform(low=0.0, high=1.0 - self.smallest_cut)
             aug_len = np.random.uniform(low=self.smallest_cut, high=1.0 - aug_start)
@@ -121,7 +120,7 @@ def collate_fn(batch):
 
 
 class C2FTCNBreakfastDataLoader(DataLoader):
-    def __init__(self, cfg: DatasetConfig, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True):
         dataset = C2FTCNBreakfastDataset(cfg, train)
 
         def init_fn(worker_id):

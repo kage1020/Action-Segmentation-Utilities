@@ -4,12 +4,10 @@ from pathlib import Path
 import numpy as np
 from sklearn.model_selection import KFold
 
-from base import Base
-
-# TODO: add config type
+from base import Base, Config
 
 
-def shuffle_split(cfg):
+def shuffle_split(cfg: Config):
     Base.init_seed(cfg.seed)
     actions = Base.get_actions(f"{cfg.base_dir}/{cfg.dataset}/actions.txt")
     kfold = KFold(n_splits=cfg.num_fold, shuffle=True, random_state=cfg.seed)
@@ -18,8 +16,9 @@ def shuffle_split(cfg):
     for action in actions.keys():
         files = glob.glob(f"{cfg.base_dir}/{cfg.dataset}/{cfg.gt_dir}/*{action}*.txt")
         files.sort()
+        semi_per = cfg.semi_per or 1.0
         files = np.random.choice(
-            files, int(len(files) * cfg.semi_per), replace=False
+            files, int(len(files) * semi_per), replace=False
         ).tolist()
         train_paths = []
         test_paths = []

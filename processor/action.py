@@ -4,10 +4,10 @@ from pathlib import Path
 from collections import OrderedDict
 from tqdm import tqdm
 
-# TODO: add config type
+from base import Config
 
 
-def create_actions(cfg):
+def create_actions(cfg: Config):
     gt_files = glob.glob(f"{cfg.base_dir}/{cfg.dataset}/{cfg.gt_dir}/*.txt")
     os.makedirs(f"{cfg.base_dir}/{cfg.dataset}/actions", exist_ok=True)
 

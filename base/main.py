@@ -81,7 +81,9 @@ class Base:
 
         if mapping_path is not None:
             self.set_class_mapping(
-                mapping_path, has_header=has_mapping_header or False, separator=mapping_separator or " "
+                mapping_path,
+                has_header=has_mapping_header or False,
+                separator=mapping_separator or " ",
             )
             self.backgrounds = [self.text_to_int[c] for c in backgrounds]
         if actions_path is not None:
@@ -89,7 +91,7 @@ class Base:
                 actions_path,
                 has_header=has_actions_header or False,
                 action_separator=actions_action_separator or " ",
-                class_separator=actions_class_separator or ","
+                class_separator=actions_class_separator or ",",
             )
         if matching_path is not None:
             self.set_action_matching(matching_path, separator=matching_separator or " ")
