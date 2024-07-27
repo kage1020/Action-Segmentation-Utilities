@@ -124,6 +124,8 @@ class SaladsDataset(BaseDataset):
 
 
 class SaladsDataLoader(DataLoader):
+    dataset: SaladsDataset
+
     def __init__(self, cfg: Config, train: bool = True):
         dataset = SaladsDataset(cfg, train)
         super(SaladsDataLoader, self).__init__(
@@ -139,6 +141,8 @@ class BreakfastDataset(BaseDataset):
 
 
 class BreakfastDataLoader(DataLoader):
+    dataset: BreakfastDataset
+
     def __init__(self, cfg: Config, train: bool = True):
         dataset = BreakfastDataset(cfg, train)
         super(BreakfastDataLoader, self).__init__(
@@ -154,6 +158,8 @@ class GteaDataset(BaseDataset):
 
 
 class GteaDataLoader(DataLoader):
+    dataset: GteaDataset
+
     def __init__(self, cfg: Config, train: bool = True):
         dataset = GteaDataset(cfg, train)
         super(GteaDataLoader, self).__init__(
@@ -169,6 +175,8 @@ class Assembly101Dataset(BaseDataset):
 
 
 class Assembly101DataLoader(DataLoader):
+    dataset: Assembly101Dataset
+
     def __init__(self, cfg: Config, train: bool = True):
         dataset = Assembly101Dataset(cfg, train)
         super(Assembly101DataLoader, self).__init__(
@@ -184,6 +192,7 @@ class AnomalousToyAssemblyDataset(BaseDataset):
 
 
 class AnomalousToyAssemblyDataLoader(DataLoader):
+    dataset: AnomalousToyAssemblyDataset
     def __init__(self, cfg: Config, train: bool = True):
         dataset = AnomalousToyAssemblyDataset(cfg, train)
         super(AnomalousToyAssemblyDataLoader, self).__init__(
@@ -199,6 +208,8 @@ class NissanDataset(BaseDataset):
 
 
 class NissanDataLoader(DataLoader):
+    dataset: NissanDataset
+
     def __init__(self, cfg: Config, train: bool = True):
         dataset = NissanDataset(cfg, train)
         super(NissanDataLoader, self).__init__(

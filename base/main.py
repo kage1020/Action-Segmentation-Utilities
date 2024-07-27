@@ -1,6 +1,6 @@
 import glob
 import random
-from dataclasses import dataclass
+from dataclasses import asdict, astuple, dataclass
 import cv2
 import numpy as np
 import torch
@@ -56,6 +56,15 @@ class Config(DictConfig):
     weight_decay: float
     mse_weight: float | None
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+    def __or__(self, other):
+        return self.__class__(**asdict(self) | asdict(other))
+
 
 class Base:
     backgrounds: list[int]
@@ -107,7 +116,7 @@ class Base:
         torch.cuda.manual_seed(seed)
 
     @staticmethod
-    def get_device(cuda: int = 0) -> torch.device:
+    def get_device(cuda: int | str = 0) -> torch.device:
         return torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
 
     @staticmethod

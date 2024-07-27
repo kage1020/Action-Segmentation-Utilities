@@ -1,21 +1,23 @@
 import hydra
-from pathlib import Path
 
 from base import Config, Base
 
 
 class HydraManager:
-    def __init__(self, config_path: str = "config"):
-        self.config_path = Path(config_path)
+    def __init__(self, config_dir: str = "config"):
+        self.config_dir = config_dir
 
     def __call__(self, fn):
         @hydra.main(
-            config_path=self.config_path.parent.absolute().as_posix(),
-            config_name=self.config_path.stem,
+            config_path=self.config_dir,
+            config_name=None,
             version_base=None,
         )
         def wrapper(cfg: Config):
-            cfg = Base.validate_config(cfg)
+            is_valid = Base.validate_config(cfg)
+            if not is_valid:
+                raise ValueError("Invalid configuration")
+
             return fn(cfg)
 
         return wrapper

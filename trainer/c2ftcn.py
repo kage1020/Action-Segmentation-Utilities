@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 import numpy as np
 import torch
 from torch import Tensor
@@ -15,6 +16,7 @@ from loader import C2FTCNBreakfastDataLoader
 # TODO: modify
 
 
+@dataclass
 class C2FTCNConfig(Config):
     feature_size: int
     output_size: int
@@ -39,8 +41,8 @@ class C2FTCNConfig(Config):
 
 
 class C2FTCNCriterion(Module):
-    def __init__(self, cfg: C2FTCNConfig, num_classes: int, mse_weight: float):
-        self.cfg = cfg
+    def __init__(self, cfg: C2FTCNConfig | Config, num_classes: int, mse_weight: float):
+        self.cfg = C2FTCNConfig(*cfg)
         self.ce = CrossEntropyLoss(ignore_index=-100)
         self.mse = MSELoss(reduction="none")
         self.num_classes = num_classes
@@ -306,7 +308,6 @@ class C2FTCNTrainer(Trainer):
     def __init__(
         self,
         cfg: C2FTCNConfig,
-        logger,
         model: Module,
         criterion: Module,
         optimizers: C2FTCNOptimizer,
@@ -315,14 +316,10 @@ class C2FTCNTrainer(Trainer):
     ):
         super().__init__(
             cfg,
-            logger,
             model,
-            criterion,
-            None,  # type: ignore
-            None,  # type: ignore
-            evaluator,
         )
         self.cfg = cfg
+        self.criterion = criterion
         self.optimizers = optimizers
         self.schedulers = schedulers
         self.best_acc = 0

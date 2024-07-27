@@ -6,6 +6,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from base import Config
+from evaluator import Evaluator
 from .main import Trainer
 
 # TODO: modify
@@ -55,20 +56,20 @@ class ASFormerTrainer(Trainer):
     def __init__(
         self,
         cfg,
-        logger,
         model: Module,
         criterion: ASFormerCriterion,
         optimizer: ASFormerOptimizer,
         scheduler: ASFormerScheduler,
-        evaluator,
     ):
-        super(ASFormerTrainer, self).__init__(
-            cfg, logger, model, criterion, optimizer, scheduler, evaluator
-        )
+        super().__init__(cfg, model)
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
-        self.evaluator = evaluator
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.train_evaluator = Evaluator(cfg)
+        self.test_evaluator = Evaluator(cfg)
 
     def train(self, train_loader, test_loader):
         self.model.to(self.device)
@@ -149,7 +150,7 @@ class ASFormerTrainer(Trainer):
                 outputs = self.model(features, mask)
                 conf, pred = torch.max(F.softmax(outputs[-1], dim=1), dim=1)
                 self.test_evaluator.add(labels, pred)
-            acc, edit, f1 = self.evaluator.get()
+            acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
                 f"F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}"
             )

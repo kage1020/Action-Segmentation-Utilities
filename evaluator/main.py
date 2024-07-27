@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from base import Base
+from base import Base, Config
 
 from numpy import ndarray
 from torch import Tensor
@@ -11,29 +11,20 @@ from torch import Tensor
 class Evaluator(Base):
     def __init__(
         self,
-        mapping_path: str,
-        actions_path: str,
-        matching_path: str,
-        has_mapping_header: bool = False,
-        mapping_separator: str = " ",
-        has_actions_header: bool = False,
-        actions_action_separator: str = " ",
-        actions_class_separator: str = ",",
-        matching_separator: str = " ",
+        cfg: Config,
         taus: tuple[float, float, float] = (0.1, 0.25, 0.5),
-        backgrounds: list[str] = [],
     ):
         super().__init__(
-            mapping_path=mapping_path,
-            actions_path=actions_path,
-            matching_path=matching_path,
-            has_mapping_header=has_mapping_header,
-            has_actions_header=has_actions_header,
-            mapping_separator=mapping_separator,
-            actions_class_separator=actions_class_separator,
-            actions_action_separator=actions_action_separator,
-            matching_separator=matching_separator,
-            backgrounds=backgrounds,
+            mapping_path=cfg.mapping_path,
+            actions_path=cfg.actions_path,
+            matching_path=cfg.matching_path,
+            has_mapping_header=cfg.has_mapping_header,
+            has_actions_header=cfg.has_actions_header,
+            mapping_separator=cfg.mapping_separator,
+            actions_class_separator=cfg.actions_class_separator,
+            actions_action_separator=cfg.actions_action_separator,
+            matching_separator=cfg.matching_separator,
+            backgrounds=cfg.backgrounds,
         )
         self.taus = taus
         self.num_videos = 0
