@@ -1,5 +1,4 @@
 from functools import partial
-from dataclasses import dataclass
 import math
 import torch
 import torch.nn as nn
@@ -7,30 +6,9 @@ from torch.nn.init import constant_
 import torch.nn.functional as F
 from einops import rearrange
 
+from trainer import LTContextConfig
+
 from torch import Tensor
-
-
-@dataclass
-class Config:
-    INPUT_DIM: int
-    NUM_CLASSES: int
-
-    class LTC:
-        NUM_STAGES: int
-        NUM_LAYERS: int
-        MODEL_DIM: int
-        DIM_REDUCTION: int
-        DROPOUT_PROB: float
-        CONV_DILATION_FACTOR: int
-        WINDOWED_ATTN_W: int
-        LONG_TERM_ATTN_G: int
-        USE_INSTANCE_NORM: bool
-        DROPOUT_PROB: float
-        CHANNEL_MASKING_PROB: float
-
-    class ATTENTION:
-        NUM_ATTN_HEADS: int
-        DROPOUT: float
 
 
 class ScaledDotProduct(nn.Module):
@@ -706,11 +684,11 @@ class LTCModule(nn.Module):
 
 
 class LTC(nn.Module):
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: LTContextConfig):
         super().__init__()
         self.stage1 = LTCModule(
             num_layers=cfg.LTC.NUM_LAYERS,
-            num_classes=cfg.NUM_CLASSES,
+            num_classes=cfg.MODEL.NUM_CLASSES,
             num_heads=cfg.ATTENTION.NUM_ATTN_HEADS,
             input_dim=cfg.INPUT_DIM,
             model_dim=cfg.LTC.MODEL_DIM,

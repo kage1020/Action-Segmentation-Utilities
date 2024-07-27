@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 import torch
 from torch import Tensor
 from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
 
 from base import Config
 from evaluator import Evaluator
@@ -12,8 +14,12 @@ from .main import Trainer
 # TODO: modify
 
 
+@dataclass
 class ASFormerConfig(Config):
     sample_rate: int
+    scheduler_mode: str
+    scheduler_factor: float
+    scheduler_patience: int
 
 
 class ASFormerCriterion(Module):
@@ -55,23 +61,25 @@ class ASFormerScheduler(ReduceLROnPlateau):
 class ASFormerTrainer(Trainer):
     def __init__(
         self,
-        cfg,
+        cfg: ASFormerConfig,
         model: Module,
-        criterion: ASFormerCriterion,
-        optimizer: ASFormerOptimizer,
-        scheduler: ASFormerScheduler,
     ):
         super().__init__(cfg, model)
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
-        self.criterion = criterion
-        self.optimizer = optimizer
-        self.scheduler = scheduler
+        self.criterion = ASFormerCriterion(cfg.num_classes, cfg.mse_weight)
+        self.optimizer = ASFormerOptimizer(model, cfg.lr, cfg.weight_decay)
+        self.scheduler = ASFormerScheduler(
+            self.optimizer,
+            mode=cfg.scheduler_mode,
+            factor=cfg.scheduler_factor,
+            patience=cfg.scheduler_patience,
+        )
         self.train_evaluator = Evaluator(cfg)
         self.test_evaluator = Evaluator(cfg)
 
-    def train(self, train_loader, test_loader):
+    def train(self, train_loader: DataLoader, test_loader: DataLoader):
         self.model.to(self.device)
 
         for epoch in range(self.cfg.epochs):

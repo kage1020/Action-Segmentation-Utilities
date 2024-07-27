@@ -32,6 +32,7 @@ class Config(DictConfig):
     actions_class_separator: str | None
     matching_separator: str | None
     dataset: str
+    num_classes: int
     split: int
     num_fold: int
     backgrounds: list[str]
@@ -64,6 +65,10 @@ class Config(DictConfig):
 
     def __or__(self, other):
         return self.__class__(**asdict(self) | asdict(other))
+
+    def update(self, key: str, value):
+        self[key] = value
+        return self
 
 
 class Base:

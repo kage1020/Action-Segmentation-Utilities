@@ -10,8 +10,9 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 
 from base import Config, Base
-from .main import Trainer
 from loader import C2FTCNBreakfastDataLoader
+from evaluator import Evaluator
+from .main import Trainer
 
 # TODO: modify
 
@@ -309,23 +310,20 @@ class C2FTCNTrainer(Trainer):
         self,
         cfg: C2FTCNConfig,
         model: Module,
-        criterion: Module,
-        optimizers: C2FTCNOptimizer,
-        schedulers: C2FTCNScheduler,
-        evaluator,
     ):
         super().__init__(
             cfg,
             model,
         )
         self.cfg = cfg
-        self.criterion = criterion
-        self.optimizers = optimizers
-        self.schedulers = schedulers
+        self.criterion = C2FTCNCriterion(cfg, cfg.output_size, cfg.mse_weight)
+        self.optimizers = C2FTCNOptimizer(model, cfg)
+        self.schedulers = C2FTCNScheduler(self.optimizers, cfg)
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
-        self.evaluator = evaluator
+        self.train_evaluator = Evaluator(cfg)
+        self.test_evaluator = Evaluator(cfg)
 
     def dump_gt_labels(self):
         os.makedirs(
@@ -525,7 +523,9 @@ class C2FTCNTrainer(Trainer):
                 f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
 
-    def train(self, train_loader, test_loader):
+    def train(self, train_loader: DataLoader, test_loader: DataLoader):
+        self.train_loader = train_loader
+        self.test_loader = test_loader
         for iter_n in range(self.cfg.start_iter, self.cfg.num_iter + 1):
             self.train_supervised(train_loader, test_loader)
 
