@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module
 
-from base import Base, Config
+from asu.base import Base, Config
 
 
 class Trainer(Base):
@@ -9,7 +9,9 @@ class Trainer(Base):
         self,
         cfg: Config,
         model: Module,
+        name: str = "Trainer",
     ):
+        super().__init__(name=name)
         self.device = torch.device(
             f"cuda:{cfg.device}" if torch.cuda.is_available() else "cpu"
         )

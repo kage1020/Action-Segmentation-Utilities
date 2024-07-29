@@ -1,4 +1,5 @@
 import logging
+from pprint import pformat
 from dataclasses import dataclass
 
 
@@ -10,25 +11,18 @@ class Color:
     RESET = "\033[0m"
 
 
-class Logger(logging.Logger):
-    def __init__(self):
-        super(Logger, self).__init__(name=__name__)
-        self.logger = logging.getLogger(__name__)
+class Logger:
+    def __init__(
+        self,
+        name: str = __name__,
+    ):
+        self.logger = logging.getLogger(name)
 
     def info(self, message: str | dict | list | object):
-        self.logger.info(Color.GREEN + self.__parse(message) + Color.RESET)
+        self.logger.info(Color.GREEN + pformat(message) + Color.RESET)
 
-    def warn(self, message: str | dict | list | object):
-        self.logger.warning(Color.YELLOW + self.__parse(message) + Color.RESET)
+    def warning(self, message: str | dict | list | object):
+        self.logger.warning(Color.YELLOW + pformat(message) + Color.RESET)
 
     def error(self, message: str | dict | list | object):
-        self.logger.error(Color.RED + self.__parse(message) + Color.RESET)
-
-    def __parse(self, message: str | dict | list | object):
-        if isinstance(message, dict):
-            return "\n".join([f"{k}: {v}" for k, v in message.items()])
-        if isinstance(message, list):
-            return "\n".join([str(m) for m in message])
-        if isinstance(message, object):
-            return str(message)
-        return message
+        self.logger.error(Color.RED + pformat(message) + Color.RESET)

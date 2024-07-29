@@ -17,7 +17,7 @@ class Extractor(Base):
         video_dir: str | None = None,
         image_dir: str | None = None,
     ):
-        super().__init__()
+        super().__init__(name="Extractor")
         assert (
             video_dir is not None or image_dir is not None
         ), "video_dir or image_dir must be provided"

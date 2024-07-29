@@ -14,6 +14,9 @@ from numpy import ndarray
 
 
 class Visualizer(Base):
+    def __init__(self):
+        super().__init__(name="Visualizer")
+
     @staticmethod
     def plot_feature(feature: ndarray, file_path: str = "feature.png"):
         assert isinstance(feature, ndarray) or isinstance(

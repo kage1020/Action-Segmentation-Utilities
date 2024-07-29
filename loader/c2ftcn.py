@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from base import Config
+from asu.base import Config
 from .main import BaseDataset
 
 
@@ -13,21 +13,23 @@ class C2FTCNBreakfastDataset(BaseDataset):
     unlabeled = []
 
     def __init__(self, cfg: Config, train: bool = True, unsupervised: bool = False):
-        super(C2FTCNBreakfastDataset, self).__init__(cfg, train)
+        super(C2FTCNBreakfastDataset, self).__init__(
+            cfg, "C2FTCNBreakfastDataset", train
+        )
 
         data = []
         for video in self.videos:
             video_id = video.split(".txt")[0]
             video_path = Path(
-                f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.feature_dir}/{video_id}.npy"
+                f"{self.cfg.dataset.base_dir}{self.cfg.dataset}/{self.cfg.dataset.feature_dir}/{video_id}.npy"
             )
             if not unsupervised:
                 gt_path = Path(
-                    f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.gt_dir}/{video_id}.txt"
+                    f"{self.cfg.dataset.base_dir}{self.cfg.dataset}/{self.cfg.dataset.gt_dir}/{video_id}.txt"
                 )
             else:
                 gt_path = Path(
-                    f"{self.cfg.base_dir}{self.cfg.dataset}/{self.cfg.pseudo_dir}/{video_id}.txt"
+                    f"{self.cfg.dataset.base_dir}{self.cfg.dataset}/{self.cfg.dataset.pseudo_dir}/{video_id}.txt"
                 )
 
             if gt_path.exists():
@@ -45,7 +47,9 @@ class C2FTCNBreakfastDataset(BaseDataset):
             start_frames = []
             end_frames = []
             for start in range(
-                0, num_frames, self.cfg.max_frames_per_video * self.cfg.chunk_size
+                0,
+                num_frames,
+                self.cfg.dataset.max_frames_per_video * self.cfg.chunk_size,
             ):
                 start_frames.append(start)
                 max_end = start + (self.cfg.max_frames_per_video * self.cfg.chunk_size)
@@ -128,7 +132,7 @@ class C2FTCNBreakfastDataLoader(DataLoader):
 
         super(C2FTCNBreakfastDataLoader, self).__init__(
             dataset,
-            batch_size=cfg.batch_size,
+            batch_size=cfg.dataset.batch_size,
             shuffle=train,
             pin_memory=False,
             num_workers=0,
