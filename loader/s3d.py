@@ -1,7 +1,5 @@
 import glob
 from pathlib import Path
-import cv2
-import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader

@@ -3,6 +3,11 @@ import hydra
 from base import Config, Base
 
 
+# FIXME: This class can't use in other files
+# @hydra.main searches config files from here(asu.manager.config...).
+# if we use `initialize` and `compose`, it will not create output directory and other methods also.
+
+
 class HydraManager:
     def __init__(self, config_dir: str = "config"):
         self.config_dir = config_dir

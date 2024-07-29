@@ -43,6 +43,7 @@ class C2FTCNConfig(Config):
 
 class C2FTCNCriterion(Module):
     def __init__(self, cfg: C2FTCNConfig | Config, num_classes: int, mse_weight: float):
+        super().__init__()
         self.cfg = C2FTCNConfig(*cfg)
         self.ce = CrossEntropyLoss(ignore_index=-100)
         self.mse = MSELoss(reduction="none")
@@ -311,10 +312,7 @@ class C2FTCNTrainer(Trainer):
         cfg: C2FTCNConfig,
         model: Module,
     ):
-        super().__init__(
-            cfg,
-            model,
-        )
+        super().__init__(cfg, model, name="C2FTCNTrainer")
         self.cfg = cfg
         self.criterion = C2FTCNCriterion(cfg, cfg.output_size, cfg.mse_weight)
         self.optimizers = C2FTCNOptimizer(model, cfg)
@@ -327,7 +325,7 @@ class C2FTCNTrainer(Trainer):
 
     def dump_gt_labels(self):
         os.makedirs(
-            f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/gt",
+            f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/gt",
             exist_ok=True,
         )
         for video_path, gt, _, _ in self.train_loader.dataset.videos:  # type: ignore
@@ -335,7 +333,7 @@ class C2FTCNTrainer(Trainer):
                 continue
 
             os.system(
-                f"cp {video_path} {self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/{self.cfg.pseudo_dir}/{video_path.name}"
+                f"cp {video_path} {self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/{self.cfg.dataset.pseudo_dir}/{video_path.name}"
             )
 
     def dump_labels(self, loader):
@@ -370,12 +368,12 @@ class C2FTCNTrainer(Trainer):
                     results[n] = [pred, c]
 
             os.makedirs(
-                f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}",
+                f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}",
                 exist_ok=True,
             )
             for n, (pred, c) in results.items():
                 with open(
-                    f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.gt_dir}/{n}.txt",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.dataset.gt_dir}/{n}.txt",
                     "r",
                 ) as f:
                     lines = f.readlines()
@@ -392,7 +390,7 @@ class C2FTCNTrainer(Trainer):
                         break
 
                 with open(
-                    f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/{self.cfg.pseudo_dir}/{n}.txt",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/{self.cfg.dataset.pseudo_dir}/{n}.txt",
                     "w",
                 ) as f:
                     f.writelines([f"{x}\n" for x in labels])
@@ -410,7 +408,7 @@ class C2FTCNTrainer(Trainer):
                 labels = labels.to(self.device)
 
                 activity_labels = None
-                if self.cfg.dataset == "breakfast":
+                if self.cfg.dataset.name == "breakfast":
                     activity_labels = np.array([name.split("_") for name in names])
 
                 projection, pred = self.model(samples, self.cfg.weights)
@@ -435,7 +433,7 @@ class C2FTCNTrainer(Trainer):
             if (epoch + 1) % (self.cfg.epochs // 10) == 0:
                 Base.save_model(
                     self.model,
-                    f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch-{epoch+1}.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch-{epoch+1}.model",
                 )
 
             if self.best_f1[0] < f1[0]:
@@ -444,7 +442,7 @@ class C2FTCNTrainer(Trainer):
                 self.best_f1 = f1
                 Base.save_model(
                     self.model,
-                    f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best.model",
                 )
 
             self.schedulers.step()
@@ -460,7 +458,7 @@ class C2FTCNTrainer(Trainer):
                     labels = labels.to(self.device)
 
                     activity_labels = None
-                    if self.cfg.dataset == "breakfast":
+                    if self.cfg.dataset.name == "breakfast":
                         activity_labels = np.array([name.split("_") for name in names])
 
                     projection, pred = self.model(samples, self.cfg.weights)
@@ -531,11 +529,11 @@ class C2FTCNTrainer(Trainer):
 
             self.model = Base.load_best_model(
                 self.model,
-                f"{self.cfg.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models",
+                f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models",
                 self.device,
             )
 
-            unlabeled_videos = train_loader.dataset.unlabeled
+            unlabeled_videos = train_loader.dataset.unlabeled # type: ignore
             unlabeled_loader = DataLoader(
                 unlabeled_videos, batch_size=1, shuffle=False, num_workers=4
             )
@@ -573,7 +571,7 @@ class C2FTCNTrainer(Trainer):
     def test(self, test_loader):
         self.model.to(self.device)
         self.model.eval()
-        model_path = f"{self.cfg.base_dir}/{self.cfg.model_dir}/best.model"
+        model_path = f"{self.cfg.dataset.base_dir}/{self.cfg.model_dir}/best.model"
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
         with torch.no_grad():
@@ -585,7 +583,7 @@ class C2FTCNTrainer(Trainer):
                 outputs = self.model(features, mask)
                 conf, pred = torch.max(F.softmax(outputs[-1], dim=1), dim=1)
                 self.test_evaluator.add(labels, pred)
-            acc, edit, f1 = self.evaluator.get()
+            acc, edit, f1 = self.train_evaluator.get()
             self.logger.info(
                 f"F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}"
             )

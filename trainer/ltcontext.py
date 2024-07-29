@@ -63,7 +63,7 @@ class LTContextCriterion(Module):
             logits (Tensor): [n_stages, batch_size, n_classes, n_frames]
             labels (Tensor): [batch_size, n_frames]
         """
-        loss = {"loss_ce": 0, "loss_mse": 0}
+        loss = {"loss_ce": torch.tensor(0).float().to(logits.device), "loss_mse": torch.tensor(0).float().to(logits.device)}
         targets = rearrange(targets, "b f -> (b f)")
         for p in logits:
             loss["loss_ce"] += self.ce(rearrange(p, "b c f -> (b f) c"), targets)
