@@ -43,7 +43,7 @@ class BaseDataset(Dataset, Base):
 
     def __load_videos(self):
         with open(
-            f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.bundle",
+            f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.{self.cfg.dataset.semi_per:.2f}.bundle",
             "r",
         ) as f:
             lines = f.readlines()
@@ -134,12 +134,13 @@ class SaladsDataset(BaseDataset):
 class SaladsDataLoader(DataLoader):
     dataset: SaladsDataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = SaladsDataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )
 
 
@@ -151,12 +152,13 @@ class BreakfastDataset(BaseDataset):
 class BreakfastDataLoader(DataLoader):
     dataset: BreakfastDataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = BreakfastDataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )
 
 
@@ -168,12 +170,13 @@ class GteaDataset(BaseDataset):
 class GteaDataLoader(DataLoader):
     dataset: GteaDataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = GteaDataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )
 
 
@@ -185,12 +188,13 @@ class Assembly101Dataset(BaseDataset):
 class Assembly101DataLoader(DataLoader):
     dataset: Assembly101Dataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = Assembly101Dataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )
 
 
@@ -202,12 +206,13 @@ class AnomalousToyAssemblyDataset(BaseDataset):
 class AnomalousToyAssemblyDataLoader(DataLoader):
     dataset: AnomalousToyAssemblyDataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = AnomalousToyAssemblyDataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )
 
 
@@ -219,10 +224,11 @@ class NissanDataset(BaseDataset):
 class NissanDataLoader(DataLoader):
     dataset: NissanDataset
 
-    def __init__(self, cfg: Config, train: bool = True):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = NissanDataset(cfg, train)
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
         )

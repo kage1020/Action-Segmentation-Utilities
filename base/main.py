@@ -149,7 +149,9 @@ class Base:
         return True
 
     @staticmethod
-    def load_model(model: Module, model_path: str, device: torch.device | str = "cpu", logger = None):
+    def load_model(
+        model: Module, model_path: str, device: torch.device | str = "cpu", logger=None
+    ):
         model = model.to(device)
         _model_path = Path(model_path)
         if _model_path.exists():

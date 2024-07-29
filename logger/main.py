@@ -15,14 +15,18 @@ class Logger:
     def __init__(
         self,
         name: str = __name__,
+        width: int = 100,
     ):
         self.logger = logging.getLogger(name)
+        self.width = width
 
     def info(self, message: str | dict | list | object):
-        self.logger.info(Color.GREEN + pformat(message) + Color.RESET)
+        self.logger.info(Color.GREEN + pformat(message, width=self.width) + Color.RESET)
 
     def warning(self, message: str | dict | list | object):
-        self.logger.warning(Color.YELLOW + pformat(message) + Color.RESET)
+        self.logger.warning(
+            Color.YELLOW + pformat(message, width=self.width) + Color.RESET
+        )
 
     def error(self, message: str | dict | list | object):
-        self.logger.error(Color.RED + pformat(message) + Color.RESET)
+        self.logger.error(Color.RED + pformat(message, width=self.width) + Color.RESET)

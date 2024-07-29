@@ -545,6 +545,7 @@ class LTContextAttention(BaseAttention):
 
 class DilatedConv(nn.Module):
     def __init__(self, n_channels: int, dilation: int, kernel_size: int):
+        super().__init__()
         self.dilated_conv = nn.Conv1d(
             n_channels,
             n_channels,
@@ -687,48 +688,48 @@ class LTC(nn.Module):
     def __init__(self, cfg: LTContextConfig):
         super().__init__()
         self.stage1 = LTCModule(
-            num_layers=cfg.LTC.NUM_LAYERS,
-            num_classes=cfg.MODEL.NUM_CLASSES,
-            num_heads=cfg.ATTENTION.NUM_ATTN_HEADS,
-            input_dim=cfg.INPUT_DIM,
-            model_dim=cfg.LTC.MODEL_DIM,
-            dilation_factor=cfg.LTC.CONV_DILATION_FACTOR,
-            windowed_attn_w=cfg.LTC.WINDOWED_ATTN_W,
-            long_term_attn_g=cfg.LTC.LONG_TERM_ATTN_G,
+            num_layers=cfg.LTC.num_layers,
+            num_classes=cfg.dataset.num_classes,
+            num_heads=cfg.ATTENTION.num_attn_heads,
+            input_dim=cfg.dataset.input_dim,
+            model_dim=cfg.LTC.model_dim,
+            dilation_factor=cfg.LTC.conv_dilation_factor,
+            windowed_attn_w=cfg.LTC.windowed_attn_w,
+            long_term_attn_g=cfg.LTC.long_term_attn_g,
             bias=True,
-            use_instance_norm=cfg.LTC.USE_INSTANCE_NORM,
+            use_instance_norm=cfg.LTC.use_instance_norm,
             use_separate_proj_weight=True,
             requires_input_projection=True,
-            dropout_prob=cfg.LTC.DROPOUT_PROB,
-            channel_dropout_prob=cfg.LTC.CHANNEL_MASKING_PROB,
-            attention_dropout_prob=cfg.ATTENTION.DROPOUT,
+            dropout_prob=cfg.LTC.dropout_prob,
+            channel_dropout_prob=cfg.LTC.channel_masking_prob,
+            attention_dropout_prob=cfg.ATTENTION.dropout,
         )
         self.dim_reduction = nn.Conv1d(
-            in_channels=cfg.LTC.MODEL_DIM,
-            out_channels=cfg.LTC.MODEL_DIM // cfg.LTC.DIM_REDUCTION,
+            in_channels=int(cfg.LTC.model_dim),
+            out_channels=int(cfg.LTC.model_dim // cfg.LTC.dim_reduction),
             kernel_size=1,
             bias=True,
         )
         self.stages = nn.ModuleList(
             [
                 LTCModule(
-                    num_layers=cfg.LTC.NUM_LAYERS,
-                    num_classes=cfg.NUM_CLASSES,
-                    num_heads=cfg.ATTENTION.NUM_ATTN_HEADS,
-                    input_dim=cfg.NUM_CLASSES,
-                    model_dim=cfg.LTC.MODEL_DIM // cfg.LTC.DIM_REDUCTION,
-                    dilation_factor=cfg.LTC.CONV_DILATION_FACTOR,
-                    windowed_attn_w=cfg.LTC.WINDOWED_ATTN_W,
-                    long_term_attn_g=cfg.LTC.LONG_TERM_ATTN_G,
+                    num_layers=cfg.LTC.num_layers,
+                    num_classes=cfg.dataset.num_classes,
+                    num_heads=cfg.ATTENTION.num_attn_heads,
+                    input_dim=cfg.dataset.num_classes,
+                    model_dim=int(cfg.LTC.model_dim // cfg.LTC.dim_reduction),
+                    dilation_factor=cfg.LTC.conv_dilation_factor,
+                    windowed_attn_w=cfg.LTC.windowed_attn_w,
+                    long_term_attn_g=cfg.LTC.long_term_attn_g,
                     bias=True,
                     use_separate_proj_weight=True,
                     requires_input_projection=True,
-                    use_instance_norm=cfg.LTC.USE_INSTANCE_NORM,
-                    dropout_prob=cfg.LTC.DROPOUT_PROB,
-                    channel_dropout_prob=cfg.LTC.CHANNEL_MASKING_PROB,
-                    attention_dropout_prob=cfg.ATTENTION.DROPOUT,
+                    use_instance_norm=cfg.LTC.use_instance_norm,
+                    dropout_prob=cfg.LTC.dropout_prob,
+                    channel_dropout_prob=cfg.LTC.channel_masking_prob,
+                    attention_dropout_prob=cfg.ATTENTION.dropout,
                 )
-                for _ in range(cfg.LTC.NUM_STAGES)
+                for _ in range(cfg.LTC.num_stages)
             ]
         )
 

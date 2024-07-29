@@ -533,7 +533,7 @@ class C2FTCNTrainer(Trainer):
                 self.device,
             )
 
-            unlabeled_videos = train_loader.dataset.unlabeled # type: ignore
+            unlabeled_videos = train_loader.dataset.unlabeled  # type: ignore
             unlabeled_loader = DataLoader(
                 unlabeled_videos, batch_size=1, shuffle=False, num_workers=4
             )
@@ -571,7 +571,7 @@ class C2FTCNTrainer(Trainer):
     def test(self, test_loader):
         self.model.to(self.device)
         self.model.eval()
-        model_path = f"{self.cfg.dataset.base_dir}/{self.cfg.model_dir}/best.model"
+        model_path = f"{self.cfg.dataset.base_dir}/{self.cfg.saved_model_path}"
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
         with torch.no_grad():

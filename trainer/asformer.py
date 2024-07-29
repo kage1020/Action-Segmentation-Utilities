@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
+from hydra.core.hydra_config import HydraConfig
 
 from base import Config
 from evaluator import Evaluator
@@ -119,12 +120,12 @@ class ASFormerTrainer(Trainer):
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.cfg.dataset.base_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
             self.logger.info(
-                f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
+                f"Epoch {epoch+1:03d} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
             if self.best_f1[0] < f1[0]:
                 self.best_acc = acc
@@ -132,7 +133,7 @@ class ASFormerTrainer(Trainer):
                 self.best_f1 = f1
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.cfg.dataset.base_dir}/{self.cfg.result_dir}/best.model",
+                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
                 )
             self.train_evaluator.reset()
             self.scheduler.step(epoch)
@@ -143,30 +144,12 @@ class ASFormerTrainer(Trainer):
             self.model.eval()
             epoch_loss = 0
 
-            for features, mask, labels in test_loader:
-                features = features.to(self.device)
-                output = self.model(features, mask)
-                pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
-                self.test_evaluator.add(labels, pred)
-            acc, edit, f1 = self.test_evaluator.get()
-            self.logger.info(
-                f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
-            )
-
-    def test(self, test_loader):
-        self.model.to(self.device)
-        self.model.eval()
-        model_path = f"{self.cfg.dataset.base_dir}/{self.cfg.model_dir}/best.model"
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-
+    def test(self, test_loader: DataLoader):
         with torch.no_grad():
             for features, mask, labels in test_loader:
                 features = features.to(self.device)
-                mask = mask.to(self.device)
-                labels = labels.to(self.device)
-
                 outputs = self.model(features, mask)
-                conf, pred = torch.max(F.softmax(outputs[-1], dim=1), dim=1)
+                pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
                 self.test_evaluator.add(labels, pred)
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(

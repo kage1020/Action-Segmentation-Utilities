@@ -1,5 +1,7 @@
+import os
 import torch
 from torch.nn import Module
+from hydra.core.hydra_config import HydraConfig
 
 from asu.base import Base, Config
 
@@ -19,6 +21,8 @@ class Trainer(Base):
         self.cfg = cfg
         self.model = model
 
+        output_dir = HydraConfig.get().runtime.output_dir
+        os.makedirs(f"{output_dir}/{cfg.result_dir}", exist_ok=True)
         Base.init_seed(cfg.seed)
 
     def train(self):
