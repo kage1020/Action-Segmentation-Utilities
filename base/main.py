@@ -1,4 +1,6 @@
+import time
 import glob
+from pathlib import Path
 import random
 from dataclasses import asdict, astuple, dataclass
 import cv2
@@ -55,11 +57,13 @@ class Config(DictConfig):
     # learning
     train: bool
     model_name: str
-    model_dir: str
+    best_model_path: str
     result_dir: str
     epochs: int
     lr: float
     weight_decay: float
+    use_pseudo: bool
+    refine_pseudo: bool
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -133,13 +137,28 @@ class Base:
         return Logger(name)
 
     @staticmethod
+    def get_time() -> float:
+        return time.time()
+
+    @staticmethod
+    def get_elapsed_time(start: float) -> float:
+        return time.time() - start
+
+    @staticmethod
     def validate_config(cfg: Config):
         return True
 
     @staticmethod
-    def load_model(model: Module, model_path: str, device: torch.device | str = "cpu"):
+    def load_model(model: Module, model_path: str, device: torch.device | str = "cpu", logger = None):
         model = model.to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        _model_path = Path(model_path)
+        if _model_path.exists():
+            model.load_state_dict(torch.load(model_path, map_location=device))
+        else:
+            if logger:
+                logger.warning(f"Model was not found in {model_path}")
+            else:
+                print(f"Model was not found in {model_path}")
         return model
 
     @staticmethod
