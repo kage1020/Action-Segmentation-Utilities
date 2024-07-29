@@ -13,15 +13,9 @@ from numpy import ndarray
 from torch import Tensor
 
 
-@dataclass()
-class Config(DictConfig):
-    # system
-    seed: int
-    device: str
-    verbose: bool
-    val_skip: bool
-
-    # dataset
+@dataclass
+class DatasetConfig(DictConfig):
+    name: str
     mapping_path: str | None
     actions_path: str | None
     matching_path: str | None
@@ -31,8 +25,8 @@ class Config(DictConfig):
     actions_action_separator: str | None
     actions_class_separator: str | None
     matching_separator: str | None
-    dataset: str
     num_classes: int
+    input_dim: int
     split: int
     num_fold: int
     backgrounds: list[str]
@@ -47,6 +41,17 @@ class Config(DictConfig):
     pseudo_dir: str | None
     semi_per: float | None
 
+
+@dataclass
+class Config(DictConfig):
+    # system
+    seed: int
+    device: str
+    verbose: bool
+    val_skip: bool
+
+    dataset: DatasetConfig
+
     # learning
     train: bool
     model_name: str
@@ -55,20 +60,18 @@ class Config(DictConfig):
     epochs: int
     lr: float
     weight_decay: float
-    mse_weight: float | None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def __post_init__(self):
+        self.dataset = DatasetConfig(**asdict(self.dataset))
 
     def __iter__(self):
         return iter(astuple(self))
 
     def __or__(self, other):
         return self.__class__(**asdict(self) | asdict(other))
-
-    def update(self, key: str, value):
-        self[key] = value
-        return self
 
 
 class Base:
@@ -80,6 +83,7 @@ class Base:
 
     def __init__(
         self,
+        name: str = "Base",
         mapping_path: str | None = None,
         actions_path: str | None = None,
         matching_path: str | None = None,
@@ -91,7 +95,7 @@ class Base:
         matching_separator: str | None = " ",
         backgrounds: list[str] = [],
     ):
-        self.logger = Logger()
+        self.logger = Logger(name)
 
         if mapping_path is not None:
             self.set_class_mapping(
@@ -125,17 +129,22 @@ class Base:
         return torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
+    def get_logger(name: str = "Base") -> Logger:
+        return Logger(name)
+
+    @staticmethod
     def validate_config(cfg: Config):
-        return cfg
+        return True
 
     @staticmethod
     def load_model(model: Module, model_path: str, device: torch.device | str = "cpu"):
+        model = model.to(device)
         model.load_state_dict(torch.load(model_path, map_location=device))
         return model
 
     @staticmethod
     def load_best_model(
-        model: Module, model_dir: str, device: torch.device | str = "cpu"
+        model: Module, model_dir: str, device: torch.device | str = "cpu", logger=None
     ):
         model_paths = glob.glob(f"{model_dir}/*")
         model_paths.sort()
@@ -143,7 +152,10 @@ class Base:
         if best_model:
             model = Base.load_model(model, best_model, device)
         else:
-            print("Best model was not found")
+            if logger:
+                logger.warning("Best model was not found")
+            else:
+                print("Best model was not found")
 
         return model
 

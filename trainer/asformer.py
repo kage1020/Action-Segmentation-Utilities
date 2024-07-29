@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from einops import rearrange
+from tqdm import tqdm
 import torch
 from torch import Tensor
 from torch.nn import Module, CrossEntropyLoss, MSELoss
@@ -11,34 +13,40 @@ from base import Config
 from evaluator import Evaluator
 from .main import Trainer
 
-# TODO: modify
-
 
 @dataclass
 class ASFormerConfig(Config):
-    sample_rate: int
+    num_decoders: int
+    num_layers: int
+    r1: int
+    r2: int
+    num_f_maps: int
+    channel_masking_rate: float
+    att_type: str
+    alpha: float
+    p: float
     scheduler_mode: str
     scheduler_factor: float
     scheduler_patience: int
+    mse_weight: float
 
 
 class ASFormerCriterion(Module):
     def __init__(self, num_classes: int, mse_weight: float):
+        super().__init__()
         self.ce = CrossEntropyLoss(ignore_index=-100)
         self.mse = MSELoss(reduction="none")
         self.num_classes = num_classes
         self.mse_weight = mse_weight
 
     def forward(self, pred: Tensor, labels: Tensor, mask: Tensor) -> Tensor:
-        loss = self.ce(
-            pred.transpose(2, 1).contiguous().view(-1, self.num_classes),
-            labels.view(-1),
-        )
-        prev = F.log_softmax(pred[:, :, 1:], dim=1)
-        next_ = F.log_softmax(pred.detach()[:, :, :-1], dim=1)
+        pred = rearrange(pred, "b c t -> b t c")
+        loss = self.ce(pred[0], labels[0])
+        prev = F.log_softmax(pred[0, :-1], dim=1)
+        next_ = F.log_softmax(pred.detach()[0, 1:], dim=1)
         mse = self.mse(prev, next_)
         loss += self.mse_weight * torch.mean(
-            torch.clamp(mse, min=0, max=16) * mask[:, :, 1:]
+            torch.clamp(mse.permute(1, 0), min=0, max=16) * mask[0, :, 1:]
         )
 
         return loss
@@ -51,11 +59,13 @@ class ASFormerOptimizer(Adam):
 
 class ASFormerScheduler(ReduceLROnPlateau):
     def __init__(
-        self, optimizer: ASFormerOptimizer, mode: str, factor: float, patience: int
+        self,
+        optimizer: ASFormerOptimizer,
+        mode: str,
+        factor: float,
+        patience: int,
     ):
-        super().__init__(
-            optimizer, mode=mode, factor=factor, patience=patience, verbose=True
-        )
+        super().__init__(optimizer, mode=mode, factor=factor, patience=patience)
 
 
 class ASFormerTrainer(Trainer):
@@ -64,11 +74,11 @@ class ASFormerTrainer(Trainer):
         cfg: ASFormerConfig,
         model: Module,
     ):
-        super().__init__(cfg, model)
+        super().__init__(cfg, model, name="ASFormerTrainer")
         self.best_acc = 0
         self.best_edit = 0
         self.best_f1 = [0, 0, 0]
-        self.criterion = ASFormerCriterion(cfg.num_classes, cfg.mse_weight)
+        self.criterion = ASFormerCriterion(cfg.dataset.num_classes, cfg.mse_weight)
         self.optimizer = ASFormerOptimizer(model, cfg.lr, cfg.weight_decay)
         self.scheduler = ASFormerScheduler(
             self.optimizer,
@@ -86,16 +96,16 @@ class ASFormerTrainer(Trainer):
             self.model.train()
             epoch_loss: float = 0
 
-            for features, mask, labels in train_loader:
+            for features, mask, labels in tqdm(train_loader, leave=False):
                 features = features.to(self.device)
                 mask = mask.to(self.device)
                 labels = labels.to(self.device)
                 self.optimizer.zero_grad()
 
                 outputs = self.model(features, mask)
-                loss: Tensor = torch.tensor(0)
+                loss: Tensor = torch.tensor(0).float().to(self.device)
                 for output in outputs:
-                    loss += self.criterion(output, labels)
+                    loss += self.criterion(output, labels, mask)
                 epoch_loss += loss.item()
 
                 loss.backward()
@@ -103,13 +113,13 @@ class ASFormerTrainer(Trainer):
 
                 pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
                 self.train_evaluator.add(
-                    labels[0].cpu().numpy(), pred.cpu().detach().numpy()
+                    labels[0].cpu().numpy(), pred[0].cpu().detach().numpy()
                 )
 
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.cfg.base_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
@@ -122,7 +132,7 @@ class ASFormerTrainer(Trainer):
                 self.best_f1 = f1
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.cfg.base_dir}/{self.cfg.result_dir}/best.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.result_dir}/best.model",
                 )
             self.train_evaluator.reset()
             self.scheduler.step(epoch)
@@ -146,7 +156,7 @@ class ASFormerTrainer(Trainer):
     def test(self, test_loader):
         self.model.to(self.device)
         self.model.eval()
-        model_path = f"{self.cfg.base_dir}/{self.cfg.model_dir}/best.model"
+        model_path = f"{self.cfg.dataset.base_dir}/{self.cfg.model_dir}/best.model"
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
         with torch.no_grad():
