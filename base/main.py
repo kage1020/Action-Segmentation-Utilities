@@ -324,7 +324,9 @@ class Base:
             except ValueError:
                 action = line
                 classes = ""
-            actions[action] = [text_to_int[c] for c in classes.split(class_separator) if c != ""]
+            actions[action] = [
+                text_to_int[c] for c in classes.split(class_separator) if c != ""
+            ]
         return actions
 
     def set_actions(

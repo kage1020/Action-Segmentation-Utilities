@@ -17,7 +17,9 @@ def create_actions(cfg: Config):
     os.makedirs(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions", exist_ok=True)
 
     for gt in tqdm(gt_files, leave=False):
-        if Path(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}").exists():
+        if Path(
+            f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}"
+        ).exists():
             continue
 
         with open(gt, "r") as f:

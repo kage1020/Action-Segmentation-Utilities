@@ -11,14 +11,21 @@ from base import Base, Config
 
 def shuffle_split(cfg: Config):
     Base.init_seed(cfg.seed)
-    text_to_int, _ = Base.get_class_mapping(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/mapping.txt")
-    actions = Base.get_actions(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions.txt", text_to_int=text_to_int)
+    text_to_int, _ = Base.get_class_mapping(
+        f"{cfg.dataset.base_dir}/{cfg.dataset.name}/mapping.txt"
+    )
+    actions = Base.get_actions(
+        f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions.txt",
+        text_to_int=text_to_int,
+    )
     kfold = KFold(n_splits=cfg.dataset.num_fold, shuffle=True, random_state=cfg.seed)
     os.makedirs(
         f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}",
         exist_ok=True,
     )
-    matching = Base.get_action_matching(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/matching.txt")
+    matching = Base.get_action_matching(
+        f"{cfg.dataset.base_dir}/{cfg.dataset.name}/matching.txt"
+    )
 
     for action in actions.keys():
         if cfg.dataset.name == "breakfast":
@@ -31,7 +38,11 @@ def shuffle_split(cfg: Config):
             files = glob.glob(
                 f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*.txt"
             )
-            files = [f for f in files if Path(f).name in matching.keys() and matching[Path(f).name] == action]
+            files = [
+                f
+                for f in files
+                if Path(f).name in matching.keys() and matching[Path(f).name] == action
+            ]
 
         files.sort()
         semi_per = cfg.dataset.semi_per or 1.0

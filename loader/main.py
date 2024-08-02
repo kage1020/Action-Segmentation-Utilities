@@ -134,7 +134,7 @@ class SaladsDataset(BaseDataset):
 class SaladsDataLoader(DataLoader):
     dataset: SaladsDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = SaladsDataset(cfg, train)
         super().__init__(
             dataset=dataset,
@@ -152,7 +152,7 @@ class BreakfastDataset(BaseDataset):
 class BreakfastDataLoader(DataLoader):
     dataset: BreakfastDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = BreakfastDataset(cfg, train)
         super().__init__(
             dataset=dataset,
@@ -170,7 +170,7 @@ class GteaDataset(BaseDataset):
 class GteaDataLoader(DataLoader):
     dataset: GteaDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = GteaDataset(cfg, train)
         super().__init__(
             dataset=dataset,
@@ -188,7 +188,7 @@ class Assembly101Dataset(BaseDataset):
 class Assembly101DataLoader(DataLoader):
     dataset: Assembly101Dataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = Assembly101Dataset(cfg, train)
         super().__init__(
             dataset=dataset,
@@ -206,7 +206,7 @@ class AnomalousToyAssemblyDataset(BaseDataset):
 class AnomalousToyAssemblyDataLoader(DataLoader):
     dataset: AnomalousToyAssemblyDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = AnomalousToyAssemblyDataset(cfg, train)
         super().__init__(
             dataset=dataset,
@@ -224,7 +224,7 @@ class NissanDataset(BaseDataset):
 class NissanDataLoader(DataLoader):
     dataset: NissanDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn = None):
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = NissanDataset(cfg, train)
         super().__init__(
             dataset=dataset,
