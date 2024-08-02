@@ -7,13 +7,19 @@ from tqdm import tqdm
 from base import Config
 
 
+# TODO: remove config arg
+
+
 def create_actions(cfg: Config):
     gt_files = glob.glob(
-        f"{cfg.dataset.base_dir}/{cfg.dataset}/{cfg.dataset.gt_dir}/*.txt"
+        f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*.txt"
     )
-    os.makedirs(f"{cfg.dataset.base_dir}/{cfg.dataset}/actions", exist_ok=True)
+    os.makedirs(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions", exist_ok=True)
 
     for gt in tqdm(gt_files, leave=False):
+        if Path(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}").exists():
+            continue
+
         with open(gt, "r") as f:
             lines = f.readlines()
             actions = OrderedDict.fromkeys(
@@ -25,6 +31,6 @@ def create_actions(cfg: Config):
             )
 
         with open(
-            f"{cfg.dataset.base_dir}/{cfg.dataset}/actions/{Path(gt).name}", "w"
+            f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}", "w"
         ) as f:
             f.writelines([f"{action}\n" for action in actions])

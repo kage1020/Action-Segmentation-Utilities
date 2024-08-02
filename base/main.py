@@ -145,6 +145,13 @@ class Base:
         return time.time() - start
 
     @staticmethod
+    def log_time(logger, seconds: float):
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        seconds = seconds % 60
+        logger.info(f"Elapsed time: {hours:02d}h {minutes:02d}m {seconds:.0f}s")
+
+    @staticmethod
     def validate_config(cfg: Config):
         return True
 
@@ -312,8 +319,12 @@ class Base:
 
         actions = {}
         for line in lines:
-            action, classes = line.split(action_separator)
-            actions[action] = [text_to_int[c] for c in classes.split(class_separator)]
+            try:
+                action, classes = line.split(action_separator)
+            except ValueError:
+                action = line
+                classes = ""
+            actions[action] = [text_to_int[c] for c in classes.split(class_separator) if c != ""]
         return actions
 
     def set_actions(
@@ -342,9 +353,13 @@ class Base:
 
         actions = {}
         for line in lines:
-            action, classes = line.split(action_separator)
+            try:
+                action, classes = line.split(action_separator)
+            except ValueError:
+                action = line
+                classes = ""
             actions[action] = [
-                self.text_to_int[c] for c in classes.split(class_separator)
+                self.text_to_int[c] for c in classes.split(class_separator) if c != ""
             ]
         self.actions = actions
 
@@ -353,6 +368,25 @@ class Base:
             self.actions[action] = [
                 mask_value if c in self.backgrounds else c for c in self.actions[action]
             ]
+
+    @staticmethod
+    def get_action_matching(matching_path: str, separator: str = " ") -> dict[str, str]:
+        """
+        Get the matching of classes
+
+        Matching file format should be:
+        video1 action1
+        video2 action2
+        ...
+        """
+        with open(matching_path, "r") as f:
+            lines = f.readlines()
+            lines = [line.strip() for line in lines if line.strip() != ""]
+        video_to_action = {}
+        for line in lines:
+            video, action = line.split(separator)
+            video_to_action[video] = action
+        return video_to_action
 
     def set_action_matching(self, matching_path: str, separator: str = " ") -> None:
         """

@@ -14,6 +14,8 @@ from numpy import ndarray
 
 
 class Visualizer(Base):
+    metrics: dict[str, list[tuple[int, float]]] = dict()
+
     def __init__(self):
         super().__init__(name="Visualizer")
 
@@ -61,6 +63,22 @@ class Visualizer(Base):
         ax.set_ylabel("Loss")
         if train_loss and test_loss:
             ax.legend()
+        fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
+        fig.savefig(file_path)
+        plt.close(fig)
+
+    @staticmethod
+    def plot_metrics(
+        metrics_name: str,
+        x: list[int],
+        values: list[float],
+        file_path: str = "metrics.png",
+    ):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(x, values)
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel(metrics_name)
         fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
         fig.savefig(file_path)
         plt.close(fig)
@@ -308,3 +326,16 @@ class Visualizer(Base):
 
     def init(self):
         pass
+
+    def add_metrics(self, epoch: int, metrics: dict[str, float]):
+        for key, value in metrics.items():
+            if key not in self.metrics:
+                self.metrics[key] = [(epoch, value)]
+            else:
+                self.metrics[key].append((epoch, value))
+
+    def save_metrics(self, save_dir: str):
+        for key, values in self.metrics.items():
+            epochs = [x[0] for x in values]
+            metrics = [x[1] for x in values]
+            self.plot_metrics(key, epochs, metrics, f"{save_dir}/{key}.png")

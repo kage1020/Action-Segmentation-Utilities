@@ -155,7 +155,7 @@ class Evaluator(Base):
     ) -> float:
         p = Evaluator.precision(gt, pred, tau)
         r = Evaluator.recall(gt, pred, tau)
-        return 2 * p * r / (p + r) if p + r > 0 else 0.0
+        return 200 * p * r / (p + r) if p + r > 0 else 0.0
 
     @staticmethod
     def auc(
@@ -202,7 +202,7 @@ class Evaluator(Base):
             for i in range(len(self.tps))
         ]
         f1 = [
-            2 * precision[i] * recall[i] / (precision[i] + recall[i])
+            200 * precision[i] * recall[i] / (precision[i] + recall[i])
             if precision[i] + recall[i] > 0
             else 0.0
             for i in range(len(precision))

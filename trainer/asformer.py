@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from hydra.core.hydra_config import HydraConfig
 
 from base import Config
+from visualizer import Visualizer
 from evaluator import Evaluator
 from .main import Trainer
 
@@ -89,6 +90,7 @@ class ASFormerTrainer(Trainer):
         )
         self.train_evaluator = Evaluator(cfg)
         self.test_evaluator = Evaluator(cfg)
+        self.visualizer = Visualizer()
 
     def train(self, train_loader: DataLoader, test_loader: DataLoader):
         self.model.to(self.device)
@@ -127,6 +129,14 @@ class ASFormerTrainer(Trainer):
             self.logger.info(
                 f"Epoch {epoch+1:03d} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
+            self.visualizer.add_metrics(epoch, {
+                "Loss": epoch_loss,
+                "Acc": acc,
+                "Edit": edit,
+                "F1@10": f1[0],
+                "F1@25": f1[1],
+                "F1@50": f1[2],
+            })
             if self.best_f1[0] < f1[0]:
                 self.best_acc = acc
                 self.best_edit = edit
@@ -143,6 +153,8 @@ class ASFormerTrainer(Trainer):
 
             self.model.eval()
             epoch_loss = 0
+
+        self.visualizer.save_metrics(f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}")
 
     def test(self, test_loader: DataLoader):
         with torch.no_grad():
