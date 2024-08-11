@@ -40,6 +40,10 @@ def shuffle_split(cfg: Config):
                 for f in files
                 if Path(f).name in matching.keys() and matching[Path(f).name] == action
             ]
+        elif cfg.dataset.name == "salads":
+            files = glob.glob(
+                f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*.txt"
+            )
         else:
             files = glob.glob(
                 f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*{action}*.txt"
