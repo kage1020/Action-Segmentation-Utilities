@@ -1,7 +1,7 @@
-Cheese open,pour,close,take,put,background
-Coffee open,put,stir,scoop,poor,take,close,background
-CofHoney open,stir,put,scoop,pour,take,close,background
-Hotdog open,put,take,pour,fold,background,close
-Pealate open,put,pour,scoop,spread,take,close,background
-Peanut open,put,take,scoop,spread,pour,close,background
-Tea open,pour,put,take,stir,scoop,shake,close,background
+Cheese open,pour,take,put,close
+Coffee open,put,stir,scoop,pour,take,close
+CofHoney open,stir,put,scoop,pour,take,close
+Hotdog open,put,take,pour,fold,close
+Pealate open,put,pour,scoop,spread,take,close
+Peanut open,put,take,scoop,spread,pour,close
+Tea open,pour,put,take,stir,scoop,shake,close

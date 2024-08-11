@@ -1,5 +1,6 @@
 import os
 import glob
+import math
 from pathlib import Path
 import numpy as np
 from sklearn.model_selection import KFold
@@ -28,11 +29,7 @@ def shuffle_split(cfg: Config):
     )
 
     for action in actions.keys():
-        if cfg.dataset.name == "breakfast":
-            files = glob.glob(
-                f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*{action}*.txt"
-            )
-        elif cfg.dataset.name == "nissan":
+        if cfg.dataset.name == "nissan":
             if action == "no_action":
                 continue
             files = glob.glob(
@@ -43,24 +40,27 @@ def shuffle_split(cfg: Config):
                 for f in files
                 if Path(f).name in matching.keys() and matching[Path(f).name] == action
             ]
+        else:
+            files = glob.glob(
+                f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}/*{action}*.txt"
+            )
 
         files.sort()
-        semi_per = cfg.dataset.semi_per or 1.0
-        file_num = len(files) * semi_per
-        if file_num < cfg.dataset.num_fold:
-            file_num = cfg.dataset.num_fold
-        files = np.random.choice(files, file_num, replace=False).tolist()
-        train_paths = []
-        test_paths = []
-
         if len(files) < cfg.dataset.num_fold:
+            Base.warning(f"Action {action} has less than {cfg.dataset.num_fold} files")
             continue
 
         for i, (train, test) in enumerate(kfold.split(files)):
-            train_paths = [Path(files[i]).name + "\n" for i in train]
+            train_paths = [Path(files[j]).name + "\n" for j in train]
             train_paths.sort()
-            test_paths = [Path(files[i]).name + "\n" for i in test]
+            test_paths = [Path(files[j]).name + "\n" for j in test]
             test_paths.sort()
+
+            semi_per = cfg.dataset.semi_per or 1.0
+            file_num = math.ceil(len(train_paths) * semi_per)
+            train_paths = np.random.choice(
+                train_paths, file_num, replace=False
+            ).tolist()
 
             with open(
                 f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}/train.split{i+1}.{cfg.dataset.semi_per:.2f}.bundle",

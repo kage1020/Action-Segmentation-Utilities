@@ -133,6 +133,18 @@ class Base:
         return torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
+    def info(message: str):
+        Logger.log(message)
+
+    @staticmethod
+    def warning(message: str):
+        Logger.log(message, level="warning")
+
+    @staticmethod
+    def error(message: str):
+        Logger.log(message, level="error")
+
+    @staticmethod
     def get_logger(name: str = "Base") -> Logger:
         return Logger(name)
 

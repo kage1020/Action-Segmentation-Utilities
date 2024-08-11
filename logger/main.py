@@ -20,6 +20,15 @@ class Logger:
         self.logger = logging.getLogger(name)
         self.width = width
 
+    @staticmethod
+    def log(message: str | dict | list | object, level: str = "info"):
+        if level == "info":
+            print(Color.GREEN + pformat(message, width=100) + Color.RESET)
+        elif level == "warning":
+            print(Color.YELLOW + pformat(message, width=100) + Color.RESET)
+        elif level == "error":
+            print(Color.RED + pformat(message, width=100) + Color.RESET)
+
     def info(self, message: str | dict | list | object):
         self.logger.info(Color.GREEN + pformat(message, width=self.width) + Color.RESET)
 
