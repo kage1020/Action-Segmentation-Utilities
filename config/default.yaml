@@ -1,0 +1,55 @@
+# training parameters
+seed: 19980125
+device: 0
+verbose: False
+val_skip: True
+train: True
+model_name: asformer
+best_model_path: models/asformer/breakfast/best_split${split}.model
+result_dir: results/asformer
+epochs: 120
+lr: 5e-4
+weight_decay: 1e-5
+mse_weight: 0.15
+scheduler_mode: min
+scheduler_factor: 0.5
+scheduler_patience: 3
+use_pseudo: False
+refine_pseudo: False
+
+# model parameters
+num_decoders: 3
+num_layers: 10
+r1: 2
+r2: 2
+num_f_maps: 64
+channel_masking_rate: 0.3
+att_type: sliding_att
+alpha: 1
+p: 3
+
+# data parameters
+name: breakfast
+split: 1
+num_fold: 4
+backgrounds:
+  - SIL
+batch_size: 1
+shuffle: True
+base_dir: data
+split_dir: splits
+gt_dir: groundTruth
+feature_dir: features
+semi_per: 1
+sampling_rate: 1
+input_dim: 2048
+num_classes: 48
+mapping_path: mapping.txt
+actions_path: actions.txt
+matching_path: matching.txt
+has_mapping_header: False
+mapping_separator: " "
+has_actions_header: False
+actions_action_separator: " "
+actions_class_separator: ","
+matching_separator: " "
