@@ -1,3 +1,4 @@
+import os
 import ffmpeg
 import glob
 from pathlib import Path
@@ -8,6 +9,8 @@ from torch.utils.data import DataLoader
 
 from base import Base
 from loader import ImageBatch
+
+# TODO: support for trimmed video
 
 
 class Extractor(Base):
@@ -28,9 +31,13 @@ class Extractor(Base):
         self.video_paths = [Path(video_path) for video_path in video_paths]
         self.image_dir = image_dir
 
+        os.makedirs(self.out_dir, exist_ok=True)
+
     def extract_features(self, model: nn.Module, model_name: str):
-        image_paths = glob.glob(f"{self.image_dir}/*.png")
-        image_paths += glob.glob(f"{self.image_dir}/*.jpg")
+        image_paths = sum(
+            [glob.glob(f"{self.image_dir}/*.{ext}") for ext in ["png", "jpg", "jpeg"]],
+            [],
+        )
         if model_name == "i3d":
             loader = DataLoader(
                 ImageBatch(image_paths, 15),

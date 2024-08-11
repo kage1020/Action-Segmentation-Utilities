@@ -46,9 +46,10 @@ def shuffle_split(cfg: Config):
 
         files.sort()
         semi_per = cfg.dataset.semi_per or 1.0
-        files = np.random.choice(
-            files, int(len(files) * semi_per), replace=False
-        ).tolist()
+        file_num = len(files) * semi_per
+        if file_num < cfg.dataset.num_fold:
+            file_num = cfg.dataset.num_fold
+        files = np.random.choice(files, file_num, replace=False).tolist()
         train_paths = []
         test_paths = []
 

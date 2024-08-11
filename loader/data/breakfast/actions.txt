@@ -7,3 +7,4 @@ salat take_bowl,take_plate,take_knife,peel_fruit,cut_fruit,put_fruit2bowl,stir_f
 sandwich take_plate,take_knife,cut_bun,smear_butter,take_topping,put_toppingOnTop,put_bunTogether
 scrambledegg take_bowl,take_plate,take_eggs,crack_egg,stir_egg,pour_oil,butter_pan,pour_egg2pan,stirfry_egg,add_saltnpepper,put_egg2plate
 tea take_cup,pour_water,add_teabag,spoon_sugar,pour_sugar,stir_tea
+juice take_glass,squeeze_orange,cut_orange,take_plate,take_squeezer,take_knife,pour_juice
