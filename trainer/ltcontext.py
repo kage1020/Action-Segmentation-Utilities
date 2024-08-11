@@ -8,7 +8,6 @@ from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
-from hydra.core.hydra_config import HydraConfig
 
 from base import Config
 from trainer import Trainer
@@ -116,14 +115,14 @@ class LTContextScheduler(SequentialLR):
 
 
 def collate_fn(batch):
-    features, _, target = zip(*batch)
+    features, _, targets, video_names = zip(*batch)
     features = [rearrange(f, "c f -> f c") for f in features]
     features = pad_sequence(features, batch_first=True)
     features = rearrange(features, "b f c -> b c f")
-    target = pad_sequence(target, batch_first=True, padding_value=-100)
+    target = pad_sequence(targets, batch_first=True, padding_value=-100)
     masks = torch.where(target == -100, 0, 1)
     masks = masks[:, None, :].bool()
-    return features, masks, target
+    return features, masks, target, video_names
 
 
 class LTContextTrainer(Trainer):
@@ -154,7 +153,9 @@ class LTContextTrainer(Trainer):
             self.model.train()
             epoch_loss: float = 0
 
-            for features, masks, targets in tqdm(train_loader, leave=False):
+            for features, masks, targets, video_names in tqdm(
+                train_loader, leave=False
+            ):
                 features = features.to(self.device)
                 masks = masks.to(self.device)
                 targets = targets.to(self.device)
@@ -167,16 +168,14 @@ class LTContextTrainer(Trainer):
                 loss.backward()
                 self.optimizer.step()
 
-                for logit, target in zip(logits, targets):
-                    pred = torch.argmax(F.softmax(logit, dim=1), dim=1)[0]
-                    self.train_evaluator.add(
-                        target.cpu().numpy(), pred.cpu().detach().numpy()
-                    )
+                preds = torch.argmax(logits[-1], dim=1)
+                for pred, target in zip(preds, targets):
+                    self.train_evaluator.add(target.cpu().numpy(), pred.cpu().numpy())
 
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
@@ -200,7 +199,7 @@ class LTContextTrainer(Trainer):
                 self.best_f1 = f1
                 torch.save(
                     self.model.state_dict(),
-                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
                 )
             self.train_evaluator.reset()
             self.scheduler.step()
@@ -208,9 +207,7 @@ class LTContextTrainer(Trainer):
             if not self.cfg.val_skip:
                 self.test(test_loader)
 
-        self.visualizer.save_metrics(
-            f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}"
-        )
+        self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
     def test(self, test_loader: DataLoader):
         self.model.to(self.device)
@@ -218,19 +215,28 @@ class LTContextTrainer(Trainer):
         epoch_loss = 0
 
         with torch.no_grad():
-            for features, masks, target in tqdm(test_loader):
+            for features, masks, targets, video_names in tqdm(test_loader):
                 features = features.to(self.device)
                 masks = masks.to(self.device)
-                target = target.to(self.device)
+                targets = targets.to(self.device)
 
                 logits = self.model(features, masks)
-                loss = self.criterion(logits, target)
+                loss = self.criterion(logits, targets)
                 epoch_loss += loss.item()
 
-                pred = torch.argmax(F.softmax(logits, dim=1), dim=1)
-                self.test_evaluator.add(
-                    target.cpu().numpy(), pred.cpu().detach().numpy()
-                )
+                preds = torch.argmax(logits[-1], dim=1)
+                for i, (pred, target) in enumerate(zip(preds, targets)):
+                    self.test_evaluator.add(target.cpu().numpy(), pred.cpu().numpy())
+                    confidence = torch.max(
+                        F.softmax(logits[-1][i], dim=0), dim=0
+                    ).values
+                    self.visualizer.plot_action_segmentation(
+                        pred.cpu().numpy(),
+                        target.cpu().numpy(),
+                        confidence.cpu().numpy(),
+                        f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}.png",
+                        backgrounds=self.cfg.dataset.backgrounds,
+                    )
 
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(

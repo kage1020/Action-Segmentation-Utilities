@@ -20,9 +20,9 @@ class Trainer(Base):
         self.logger.info(f"Running on {self.device}")
         self.cfg = cfg
         self.model = model
+        self.hydra_dir = HydraConfig.get().runtime.output_dir
 
-        output_dir = HydraConfig.get().runtime.output_dir
-        os.makedirs(f"{output_dir}/{cfg.result_dir}", exist_ok=True)
+        os.makedirs(f"{self.hydra_dir}/{cfg.result_dir}", exist_ok=True)
         Base.init_seed(cfg.seed)
 
     def train(self):

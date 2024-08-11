@@ -23,19 +23,23 @@ class Logger:
     @staticmethod
     def log(message: str | dict | list | object, level: str = "info"):
         if level == "info":
-            print(Color.GREEN + pformat(message, width=100) + Color.RESET)
+            print(Color.GREEN + pformat(message, width=100)[1:-1] + Color.RESET)
         elif level == "warning":
-            print(Color.YELLOW + pformat(message, width=100) + Color.RESET)
+            print(Color.YELLOW + pformat(message, width=100)[1:-1] + Color.RESET)
         elif level == "error":
-            print(Color.RED + pformat(message, width=100) + Color.RESET)
+            print(Color.RED + pformat(message, width=100)[1:-1] + Color.RESET)
 
     def info(self, message: str | dict | list | object):
-        self.logger.info(Color.GREEN + pformat(message, width=self.width) + Color.RESET)
+        self.logger.info(
+            Color.GREEN + pformat(message, width=self.width)[1:-1] + Color.RESET
+        )
 
     def warning(self, message: str | dict | list | object):
         self.logger.warning(
-            Color.YELLOW + pformat(message, width=self.width) + Color.RESET
+            Color.YELLOW + pformat(message, width=self.width)[1:-1] + Color.RESET
         )
 
     def error(self, message: str | dict | list | object):
-        self.logger.error(Color.RED + pformat(message, width=self.width) + Color.RESET)
+        self.logger.error(
+            Color.RED + pformat(message, width=self.width)[1:-1] + Color.RESET
+        )

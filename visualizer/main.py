@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import cv2
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -11,6 +12,8 @@ from visualizer.reader import VideoReader
 
 from torch import Tensor
 from numpy import ndarray
+
+matplotlib.use("Agg")
 
 
 class Visualizer(Base):
@@ -142,17 +145,18 @@ class Visualizer(Base):
             fig_size = (10, fig_size[1] + 1)
 
         fig = plt.figure(figsize=fig_size)
+        fig.subplots_adjust(left=0.06, right=0.99, top=0.98, bottom=0.11)
+        gs = fig.add_gridspec(3, 1)
         acc = [0, 0]  # [Pred, GT]
 
-        # TODO: adjust the position
         if (pred is None or gt is None) and confidences is None:
-            bar_ax = fig.add_axes((0.03, 0.3, 0.94, 0.6))
+            bar_ax = fig.add_subplot(gs)
         elif (pred is None or gt is None) and confidences is not None:
-            bar_ax = fig.add_axes((0.1, 0.1, 0.9, 0.9))
+            bar_ax = fig.add_subplot(gs[0:2])
         elif (pred is not None and gt is not None) and confidences is None:
-            bar_ax = fig.add_axes((0.05, 0.15, 0.94, 0.8))
+            bar_ax = fig.add_subplot(gs[0:2])
         elif (pred is not None and gt is not None) and confidences is not None:
-            bar_ax = fig.add_axes((0.1, 0.1, 0.9, 0.8))
+            bar_ax = fig.add_subplot(gs[0:2])
 
         if palette is None:
             palette = template(num_classes, "cividis")
@@ -193,7 +197,7 @@ class Visualizer(Base):
             bar_ax.set_yticks([])
 
         if confidences is not None:
-            line_ax = fig.add_axes((0.06, 0.15, 0.92, 0.8 / 3))
+            line_ax = fig.add_subplot(gs[2])
             line_ax.plot(confidences, color="black")
             line_ax.set_ylim(bottom=0, top=1)
             line_ax.set_xmargin(0)
@@ -202,14 +206,14 @@ class Visualizer(Base):
             bar_ax.set_xticks([])
             bar_ax.set_xlabel("")
         if return_canvas:
-            fig.savefig(file_path)
-            plt.close(fig)
-        else:
             canvas = FigureCanvasAgg(fig)
             canvas.draw()
             data = np.array(canvas.buffer_rgba(), dtype=np.uint8)[:, :, :3]
             plt.close(fig)
             return data
+        else:
+            fig.savefig(file_path)
+            plt.close(fig)
 
     @staticmethod
     def make_video(

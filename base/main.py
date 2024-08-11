@@ -436,5 +436,6 @@ class Base:
 
     @staticmethod
     def mask_label_with_backgrounds(x: ndarray, backgrounds: ndarray):
-        assert len(backgrounds) > 0, "backgrounds should have at least one element"
+        if len(backgrounds) == 0:
+            return x
         return np.array([t if t not in backgrounds else backgrounds[0] for t in x])

@@ -39,7 +39,7 @@ class BaseDataset(Dataset, Base):
         features = self.__get_video(video_path)
         mask = torch.ones(len(self.text_to_int), features.size(1)).float()
         gt = self.__get_gt(video_path)
-        return features, mask, gt
+        return features, mask, gt, video_path.stem
 
     def __load_videos(self):
         with open(

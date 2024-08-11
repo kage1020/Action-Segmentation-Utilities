@@ -8,7 +8,6 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from hydra.core.hydra_config import HydraConfig
 
 from base import Config
 from visualizer import Visualizer
@@ -99,7 +98,7 @@ class ASFormerTrainer(Trainer):
             self.model.train()
             epoch_loss: float = 0
 
-            for features, mask, labels in tqdm(train_loader, leave=False):
+            for features, mask, labels, video_names in tqdm(train_loader, leave=False):
                 features = features.to(self.device)
                 mask = mask.to(self.device)
                 labels = labels.to(self.device)
@@ -122,7 +121,7 @@ class ASFormerTrainer(Trainer):
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
@@ -146,7 +145,7 @@ class ASFormerTrainer(Trainer):
                 self.best_f1 = f1
                 torch.save(
                     self.model.state_dict(),
-                    f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
                 )
             self.train_evaluator.reset()
             self.scheduler.step(epoch)
@@ -157,13 +156,11 @@ class ASFormerTrainer(Trainer):
             self.model.eval()
             epoch_loss = 0
 
-        self.visualizer.save_metrics(
-            f"{HydraConfig.get().runtime.output_dir}/{self.cfg.result_dir}"
-        )
+        self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
     def test(self, test_loader: DataLoader):
         with torch.no_grad():
-            for features, mask, labels in test_loader:
+            for features, mask, labels, video_names in tqdm(test_loader, leave=False):
                 features = features.to(self.device)
                 outputs = self.model(features, mask)
                 pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
