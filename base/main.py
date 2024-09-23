@@ -171,12 +171,18 @@ class Base:
 
     @staticmethod
     def load_model(
-        model: Module, model_path: str, device: torch.device | str = "cpu", logger=None
+        model: Module,
+        model_path: str,
+        device: torch.device | str = "cpu",
+        logger=None,
+        strict: bool = True,
     ):
         model = model.to(device)
         _model_path = Path(model_path)
         if _model_path.exists():
-            model.load_state_dict(torch.load(model_path, map_location=device))
+            model.load_state_dict(
+                torch.load(model_path, map_location=device), strict=strict
+            )
         else:
             if logger:
                 logger.warning(f"Model was not found in {model_path}")

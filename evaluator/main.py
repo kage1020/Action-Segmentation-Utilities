@@ -217,3 +217,6 @@ class Evaluator(Base):
         self.tps = [0] * len(self.tps)
         self.fps = [0] * len(self.fps)
         self.fns = [0] * len(self.fns)
+
+    def save(self, x: ndarray, path: str) -> None:
+        np.save(path, x)

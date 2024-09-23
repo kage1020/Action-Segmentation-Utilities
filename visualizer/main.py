@@ -146,7 +146,7 @@ class Visualizer(Base):
 
         fig = plt.figure(figsize=fig_size)
         fig.subplots_adjust(left=0.06, right=0.99, top=0.98, bottom=0.11)
-        gs = fig.add_gridspec(3, 1)
+        gs = fig.add_gridspec(2, 1)
         acc = [0, 0]  # [Pred, GT]
 
         if (pred is None or gt is None) and confidences is None:

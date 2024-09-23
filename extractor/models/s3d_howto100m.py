@@ -37,7 +37,7 @@ class SentenceEmbedding(nn.Module):
         token_to_word_path: str = "dict.npy",
     ):
         super().__init__()
-        self.word_embedding = nn.Embedding(num_embeddings, word_embedding_dim)
+        self.word_embd = nn.Embedding(num_embeddings, word_embedding_dim)
         self.fc1 = nn.Linear(word_embedding_dim, output_dim)
         self.fc2 = nn.Linear(output_dim, embedding_dim)
         self.word_to_token = {}
@@ -72,8 +72,8 @@ class SentenceEmbedding(nn.Module):
 
     def forward(self, x: list[str]):
         out = self.__words_to_ids(x)
-        out = out.to(self.device)
-        out = self.word_embedding(out)
+        out = out.to(self.word_embd.weight.device)
+        out = self.word_embd(out)
         out = F.relu(self.fc1(out))
         out = torch.max(out, dim=1)[0]
         out = self.fc2(out)
@@ -251,13 +251,13 @@ class S3D(nn.Module):
     def __init__(
         self,
         num_classes: int = 512,
-        gating: bool = True,
+        gate: bool = True,
         space_to_depth: bool = True,
         dict_path: str = "dict.npy",
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.gating = gating
+        self.gate = gate
         self.space_to_depth = space_to_depth
 
         if space_to_depth:
@@ -265,7 +265,7 @@ class S3D(nn.Module):
         else:
             self.conv_1 = STConv3D(3, 64, (3, 7, 7), (1, 2, 2), (1, 3, 3), False)
         self.conv_2b = STConv3D(64, 64, (1, 1, 1), separable=False)
-        self.conv_2c = STConv3D(64, 192, (3, 3, 3), padding=(1, 1, 1))
+        self.conv_2c = STConv3D(64, 192, (3, 3, 3), padding=(1, 1, 1), separable=True)
         self.maxpool_2a = MaxPool3dTFPadding((1, 3, 3), (1, 2, 2))
         self.maxpool_3a = MaxPool3dTFPadding((1, 3, 3), (1, 2, 2))
         self.mixed_3b = InceptionBlock(192, 64, 96, 128, 16, 32, 32)
@@ -291,13 +291,13 @@ class S3D(nn.Module):
         self.maxpool_5a = MaxPool3dTFPadding((2, 2, 2), (2, 2, 2))
         self.maxpool_5a_2x2 = MaxPool3dTFPadding((2, 2, 2), (2, 2, 2))
         self.mixed_5b = InceptionBlock(
-            self.mixed_4f.output_dim, 384, 192, 384, 48, 128, 128
+            self.mixed_4f.output_dim, 256, 160, 320, 32, 128, 128
         )
         self.mixed_5c = InceptionBlock(
             self.mixed_5b.output_dim, 384, 192, 384, 48, 128, 128
         )
         self.fc = nn.Linear(self.mixed_5c.output_dim, num_classes)
-        self.gate = SelfGating(192)
+        self.gating = SelfGating(192)
         self.text_module = SentenceEmbedding(num_classes, token_to_word_path=dict_path)
 
     def __space_to_depth(self, x: Tensor) -> Tensor:
@@ -323,8 +323,8 @@ class S3D(nn.Module):
         out = self.maxpool_2a(out)
         out = self.conv_2b(out)
         out = self.conv_2c(out)
-        if self.gating:
-            out = self.gate(out)
+        if self.gate:
+            out = self.gating(out)
         out = self.maxpool_3a(out)
         out = self.mixed_3b(out)
         out = self.mixed_3c(out)
@@ -351,8 +351,8 @@ class S3D(nn.Module):
         out = self.maxpool_2a(out)
         out = self.conv_2b(out)
         out = self.conv_2c(out)
-        if self.gating:
-            out = self.gate(out)
+        if self.gate:
+            out = self.gating(out)
         out = self.maxpool_3a(out)
         out = self.mixed_3b(out)
         out = self.mixed_3c(out)
@@ -368,3 +368,6 @@ class S3D(nn.Module):
         out = torch.mean(out, dim=[2, 3, 4])
 
         return out
+
+    def extract_text_features(self, x: list[str]):
+        return self.text_module(x)

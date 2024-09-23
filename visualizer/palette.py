@@ -504,4 +504,7 @@ DA_PURPLE10 = list(
 
 
 def template(n: int, name: str):
+    """
+    name: viridis, plasma, inferno, magma, cividis
+    """
     return [mpl.colormaps[name].resampled(n)(i / n) for i in range(n)]

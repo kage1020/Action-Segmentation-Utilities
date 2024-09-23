@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from base import Config
-from visualizer import Visualizer
+from visualizer import Visualizer, template
 from evaluator import Evaluator
 from .main import Trainer
 
@@ -162,9 +162,23 @@ class ASFormerTrainer(Trainer):
         with torch.no_grad():
             for features, mask, labels, video_names in tqdm(test_loader, leave=False):
                 features = features.to(self.device)
+                mask = mask.to(self.device)
+
                 outputs = self.model(features, mask)
                 pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
-                self.test_evaluator.add(labels, pred)
+                self.test_evaluator.add(
+                    labels[0].cpu().numpy(), pred[0].cpu().detach().numpy()
+                )
+                self.test_evaluator.save(
+                    pred[0].cpu().numpy(),
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.npy",
+                )
+                self.visualizer.plot_action_segmentation(
+                    pred[0].cpu().detach().numpy(),
+                    labels[0].cpu().numpy(),
+                    file_path=f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.png",
+                    palette=template(50, "viridis"),
+                )
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
                 f"F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}"
