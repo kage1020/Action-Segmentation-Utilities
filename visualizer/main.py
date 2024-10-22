@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from sklearn.manifold import TSNE
 
 from base import Base
 from visualizer.palette import template
@@ -33,7 +34,28 @@ class Visualizer(Base):
         ax = fig.add_subplot(111)
         axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap="jet")
         fig.colorbar(axfig, ax=ax)
-        fig.subplots_adjust(left=0.1, right=1.05, top=0.98, bottom=0.05)
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+        fig.savefig(file_path)
+        plt.close(fig)
+
+    @staticmethod
+    def plot_tsne(feature: ndarray, file_path: str = "tsne.png"):
+        """
+        feature: 2D array of shape (n_frames, n_features)
+        """
+        assert isinstance(feature, ndarray) or isinstance(
+            feature, Tensor
+        ), "Feature must be a numpy array or a torch tensor"
+        assert len(feature.shape) == 2, "Feature must be a 2D array"
+
+        tsne = TSNE(n_components=2)
+        results = tsne.fit_transform(feature)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        axfig = ax.scatter(results[:, 0], results[:, 1])
+        fig.colorbar(axfig, ax=ax)
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
         fig.savefig(file_path)
         plt.close(fig)
 

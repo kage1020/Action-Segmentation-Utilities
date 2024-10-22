@@ -263,7 +263,7 @@ class S3D(nn.Module):
         if space_to_depth:
             self.conv1 = STConv3D(24, 64, (2, 4, 4), (1, 1, 1), (1, 2, 2), False)
         else:
-            self.conv_1 = STConv3D(3, 64, (3, 7, 7), (1, 2, 2), (1, 3, 3), False)
+            self.conv1 = STConv3D(3, 64, (3, 7, 7), (1, 2, 2), (1, 3, 3), False)
         self.conv_2b = STConv3D(64, 64, (1, 1, 1), separable=False)
         self.conv_2c = STConv3D(64, 192, (3, 3, 3), padding=(1, 1, 1), separable=True)
         self.maxpool_2a = MaxPool3dTFPadding((1, 3, 3), (1, 2, 2))

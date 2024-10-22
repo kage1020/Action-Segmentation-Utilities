@@ -166,6 +166,15 @@ class Base:
         logger.info(f"Elapsed time: {hours:02d}h {minutes:02d}m {seconds:.0f}s")
 
     @staticmethod
+    def get_dirs(path: str | Path, recursive: bool = False) -> list[Path]:
+        path = Path(path)
+        dirs = [d for d in path.iterdir() if d.is_dir()]
+        if recursive:
+            for d in dirs:
+                dirs.extend(Base.get_dirs(d, recursive))
+        return dirs
+
+    @staticmethod
     def validate_config(cfg: Config):
         return True
 
@@ -427,6 +436,28 @@ class Base:
             video, action = line.split(separator)
             video_to_action[video] = action
         self.video_to_action = video_to_action
+
+    @staticmethod
+    def get_boundaries(boundary_dir: Path) -> dict[str, list[list[int]]]:
+        """
+        Get the boundaries of the videos
+
+        Boundary file format should be:
+        0    100
+        101  200
+        ...
+        """
+        boundary_files = list(boundary_dir.glob("*.txt"))
+        boundary_files.sort()
+        boundaries = {}
+
+        for boundary_file in boundary_files:
+            with open(boundary_file, "r") as f:
+                lines = f.readlines()
+            boundaries[boundary_file.stem] = [
+                [int(x) for x in line.strip().split()] for line in lines
+            ]
+        return boundaries
 
     @staticmethod
     def to_segments(x: ndarray):
