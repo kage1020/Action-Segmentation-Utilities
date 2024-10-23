@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from sklearn.manifold import TSNE
+from sklearn.metrics import roc_curve, RocCurveDisplay
 
 from base import Base
 from visualizer.palette import template
@@ -172,7 +173,7 @@ class Visualizer(Base):
         acc = [0, 0]  # [Pred, GT]
 
         if (pred is None or gt is None) and confidences is None:
-            bar_ax = fig.add_subplot(gs)
+            bar_ax = fig.add_subplot(gs) # type: ignore
         elif (pred is None or gt is None) and confidences is not None:
             bar_ax = fig.add_subplot(gs[0:2])
         elif (pred is not None and gt is not None) and confidences is None:
@@ -238,6 +239,19 @@ class Visualizer(Base):
             plt.close(fig)
 
     @staticmethod
+    def plot_roc_curve(
+        gt: ndarray,
+        pred: ndarray,
+        file_path: str = "roc_curve.png",
+    ):
+        fpr, tpr, _ = roc_curve(gt, pred)
+        roc_display = RocCurveDisplay(fpr=fpr, tpr=tpr)
+        fig, ax = plt.subplots()
+        roc_display.plot(ax=ax)
+        fig.savefig(file_path)
+        plt.close(fig)
+
+    @staticmethod
     def make_video(
         pred: ndarray | None = None,
         gt: ndarray | None = None,
@@ -274,7 +288,7 @@ class Visualizer(Base):
                 fy=1.0,
             )  # type: ignore
             video_size = (video_size[0] + segmentation.shape[0], video_size[1])  # type: ignore
-            bar_width = max(5, int(segmentation.shape[1] * 0.005))
+            bar_width = max(5, int(segmentation.shape[1] * 0.005)) # type: ignore
 
         if show_label:
             video_size = (video_size[0] + text_area_size[0], video_size[1])
@@ -297,7 +311,7 @@ class Visualizer(Base):
                     )
                     if pred is not None and gt is None:
                         cv2.putText(
-                            img=seg,
+                            img=seg, # type: ignore
                             text="Pred: " + reverse_mapping[pred[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -310,7 +324,7 @@ class Visualizer(Base):
                         )
                     if pred is None and gt is not None:
                         cv2.putText(
-                            img=seg,
+                            img=seg, # type: ignore
                             text="GT: " + reverse_mapping[gt[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -323,7 +337,7 @@ class Visualizer(Base):
                         )
                     if pred is not None and gt is not None:
                         cv2.putText(
-                            img=seg,
+                            img=seg, # type: ignore
                             text="Pred: " + reverse_mapping[pred[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -335,7 +349,7 @@ class Visualizer(Base):
                             thickness=5,
                         )
                         cv2.putText(
-                            img=seg,
+                            img=seg, # type: ignore
                             text="GT: " + reverse_mapping[gt[i]],
                             org=(
                                 reader.image_size[1] * 16 // 30,
