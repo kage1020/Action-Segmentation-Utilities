@@ -1,4 +1,6 @@
 from .main import (
+    BaseDataset,
+    BaseDataLoader,
     BreakfastDataset,
     BreakfastDataLoader,
     SaladsDataset,

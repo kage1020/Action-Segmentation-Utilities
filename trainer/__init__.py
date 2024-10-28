@@ -1,4 +1,4 @@
-from .main import Trainer
+from .main import Trainer, NoopLoss
 from .asformer import (
     ASFormerConfig,
     ASFormerTrainer,
@@ -21,4 +21,9 @@ from .ltcontext import (
     LTContextScheduler,
     collate_fn,
 )
-from .paprika import PaprikaConfig, PaprikaPretrainConfig, PaprikaPseudoConfig
+from .paprika import (
+    PaprikaConfig,
+    PaprikaPretrainConfig,
+    PaprikaPseudoConfig,
+    PaprikaTrainer,
+)

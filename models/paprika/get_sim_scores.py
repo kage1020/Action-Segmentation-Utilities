@@ -111,7 +111,7 @@ def find_step_similarities_for_segments_using_narration(
                 segment_narration_embeddings[segment_id],
             )
             save_path.parent.mkdir(parents=True, exist_ok=True)
-            np.save(save_path, cos_scores[:,0].numpy())
+            np.save(save_path, cos_scores[:, 0].numpy())
 
 
 def get_sim_scores(cfg: PaprikaConfig):
@@ -130,5 +130,8 @@ def get_DS_sim_scores(cfg: PaprikaConfig):
         gather_all_narration_MPNet_embeddings(cfg)
     )
     find_step_similarities_for_segments_using_narration(
-        cfg, step_des_feats, segment_narration_embeddings, segment_narration_lookup_table
+        cfg,
+        step_des_feats,
+        segment_narration_embeddings,
+        segment_narration_lookup_table,
     )

@@ -126,17 +126,30 @@ class BaseDataset(Dataset, Base):
                 np.save(prob_path, pseudo_probs.cpu().numpy())
 
 
+class BaseDataLoader(DataLoader):
+    dataset: BaseDataset
+
+    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
+        dataset = BaseDataset(cfg, train=train)
+        super().__init__(
+            dataset=dataset,
+            batch_size=cfg.dataset.batch_size,
+            shuffle=cfg.dataset.shuffle,
+            collate_fn=collate_fn,
+        )
+
+
 class SaladsDataset(BaseDataset):
     def __init__(self, cfg: Config, train: bool = True):
         super().__init__(cfg, "SaladsDataset", train)
 
 
-class SaladsDataLoader(DataLoader):
+class SaladsDataLoader(BaseDataLoader, DataLoader):
     dataset: SaladsDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = SaladsDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -149,12 +162,12 @@ class BreakfastDataset(BaseDataset):
         super().__init__(cfg, "BreakfastDataset", train)
 
 
-class BreakfastDataLoader(DataLoader):
+class BreakfastDataLoader(BaseDataLoader, DataLoader):
     dataset: BreakfastDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = BreakfastDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -167,12 +180,12 @@ class GteaDataset(BaseDataset):
         super().__init__(cfg, "GteaDataset", train)
 
 
-class GteaDataLoader(DataLoader):
+class GteaDataLoader(BaseDataLoader, DataLoader):
     dataset: GteaDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = GteaDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -185,12 +198,12 @@ class Assembly101Dataset(BaseDataset):
         super().__init__(cfg, "Assembly101Dataset", train)
 
 
-class Assembly101DataLoader(DataLoader):
+class Assembly101DataLoader(BaseDataLoader, DataLoader):
     dataset: Assembly101Dataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = Assembly101Dataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -203,12 +216,12 @@ class AnomalousToyAssemblyDataset(BaseDataset):
         super().__init__(cfg, "AnomalousToyAssemblyDataset", train)
 
 
-class AnomalousToyAssemblyDataLoader(DataLoader):
+class AnomalousToyAssemblyDataLoader(BaseDataLoader, DataLoader):
     dataset: AnomalousToyAssemblyDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = AnomalousToyAssemblyDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -221,12 +234,12 @@ class Howto100MDataset(BaseDataset):
         super().__init__(cfg, "Howto100MDataset", train)
 
 
-class Howto100MDataLoader(DataLoader):
+class Howto100MDataLoader(BaseDataLoader, DataLoader):
     dataset: Howto100MDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = Howto100MDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,
@@ -239,12 +252,12 @@ class NissanDataset(BaseDataset):
         super().__init__(cfg, "NissanDataset", train)
 
 
-class NissanDataLoader(DataLoader):
+class NissanDataLoader(BaseDataLoader, DataLoader):
     dataset: NissanDataset
 
     def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
         dataset = NissanDataset(cfg, train)
-        super().__init__(
+        super(BaseDataLoader, self).__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
             shuffle=cfg.dataset.shuffle,

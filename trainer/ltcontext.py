@@ -2,17 +2,18 @@ from dataclasses import asdict, dataclass
 from einops import rearrange
 from tqdm import tqdm
 import torch
-from torch.optim import Adam
+from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import DataLoader
 
 from base import Config
+from base.main import Base
 from trainer import Trainer
 from evaluator import Evaluator
 from visualizer import Visualizer
+from loader import BaseDataLoader
 
 from torch import Tensor
 
@@ -40,7 +41,7 @@ class AttentionConfig:
 @dataclass
 class SolverConfig:
     t_max: int
-    eta_min: float
+    eta_min: int
     milestone: int
 
 
@@ -105,7 +106,7 @@ class LTContextOptimizer(Adam):
 
 class LTContextScheduler(SequentialLR):
     def __init__(
-        self, optimizer: LTContextOptimizer, T_max: int, eta_min: float, milestone: int
+        self, optimizer: LTContextOptimizer, T_max: int, eta_min: int, milestone: int
     ):
         identity = LinearLR(optimizer, start_factor=1.0)
         main_lr_scheduler = CosineAnnealingLR(
@@ -146,7 +147,7 @@ class LTContextTrainer(Trainer):
         self.test_evaluator = Evaluator(cfg)
         self.visualizer = Visualizer()
 
-    def train(self, train_loader: DataLoader, test_loader: DataLoader):
+    def train(self, train_loader: BaseDataLoader, test_loader: BaseDataLoader):
         self.model.to(self.device)
 
         for epoch in range(self.cfg.epochs):
@@ -209,7 +210,7 @@ class LTContextTrainer(Trainer):
 
         self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: BaseDataLoader):
         self.model.to(self.device)
         self.model.eval()
         epoch_loss = 0
@@ -235,7 +236,7 @@ class LTContextTrainer(Trainer):
                         target.cpu().numpy(),
                         confidence.cpu().numpy(),
                         f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}.png",
-                        backgrounds=self.cfg.dataset.backgrounds,
+                        backgrounds=Base.to_class_index(self.cfg.dataset.backgrounds, test_loader.dataset.text_to_int),
                     )
 
             acc, edit, f1 = self.test_evaluator.get()

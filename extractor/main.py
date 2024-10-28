@@ -74,7 +74,11 @@ class Extractor(Base):
             )
             with torch.no_grad():
                 for rgb, image_dir in tqdm(loader, leave=False):
-                    out_path = self.out_dir / image_dir.relative_to(self.image_dir) / "features.npy"
+                    out_path = (
+                        self.out_dir
+                        / image_dir.relative_to(self.image_dir)
+                        / "features.npy"
+                    )
                     out_path.parent.mkdir(parents=True, exist_ok=True)
                     if len(rgb) == 0 or out_path.exists():
                         continue

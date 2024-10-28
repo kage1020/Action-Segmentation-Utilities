@@ -55,7 +55,9 @@ def obtain_dataset_step_task_occurrence(
     cfg: PaprikaConfig, node2step, step2node, pseudo_label_VNM, samples_reverse
 ):
     video_meta_csv = pl.read_csv(cfg.video_meta_csv_path)
-    task_ids_csv = pl.read_csv(cfg.task_id_to_task_name_csv_path, separator="\t", has_header=False)
+    task_ids_csv = pl.read_csv(
+        cfg.task_id_to_task_name_csv_path, separator="\t", has_header=False
+    )
 
     task_id_to_task_name_original_map = dict()
     for row in task_ids_csv.iter_rows():

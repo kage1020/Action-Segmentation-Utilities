@@ -6,6 +6,11 @@ from hydra.core.hydra_config import HydraConfig
 from asu.base import Base, Config
 
 
+class NoopLoss(Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(1, device=x.device)
+
+
 class Trainer(Base):
     def __init__(
         self,

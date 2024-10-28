@@ -222,12 +222,12 @@ class Base:
         torch.save(model.state_dict(), model_path)
 
     @staticmethod
-    def to_np(x: list | ndarray | Tensor | None) -> ndarray:
-        if x is None or len(x) == 0:
+    def to_np(x: list | ndarray | Tensor, mapping: dict[str, int] | None = None) -> ndarray:
+        if len(x) == 0:
             return np.array([])
         if isinstance(x, list):
             if isinstance(x[0], str):
-                return Base.to_class_index(x)
+                return Base.to_class_index(x, mapping if mapping is not None else {})
         if isinstance(x, ndarray):
             return x
         if isinstance(x, Tensor):
@@ -247,13 +247,13 @@ class Base:
         raise ValueError("Invalid input type")
 
     @staticmethod
-    def to_class_name(x: ndarray | Tensor) -> list[str]:
+    def to_class_name(x: ndarray | Tensor, int_to_text: dict[int, str]) -> list[str]:
         _x = Base.to_np(x)
-        return [Base.int_to_text[i] for i in _x]
+        return [int_to_text[i] for i in _x]
 
     @staticmethod
-    def to_class_index(x: list[str]) -> ndarray:
-        _x = [Base.text_to_int[i] for i in x]
+    def to_class_index(x: list[str], text_to_int: dict[str, int]) -> ndarray:
+        _x = [text_to_int[i] for i in x]
         return Base.to_np(_x)
 
     @staticmethod

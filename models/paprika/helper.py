@@ -100,4 +100,6 @@ def find_matching_of_a_segment(sim_scores, criteria="threshold", threshold=0.7, 
 
 
 def cos_sim(a, b):
-    return torch.mm(F.normalize(a, p=2, dim=1), F.normalize(b, p=2, dim=1).transpose(0, 1))
+    return torch.mm(
+        F.normalize(a, p=2, dim=1), F.normalize(b, p=2, dim=1).transpose(0, 1)
+    )
