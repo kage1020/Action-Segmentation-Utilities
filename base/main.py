@@ -119,6 +119,15 @@ class Base:
             self.set_action_matching(matching_path, separator=matching_separator or " ")
 
     @staticmethod
+    def unique(
+        x: list | ndarray, return_index: bool = False
+    ) -> ndarray | list[ndarray, ndarray]:
+        _, unique_indices = np.unique(x, return_index=True)
+        if return_index:
+            return np.array([x[i] for i in np.sort(unique_indices)]), unique_indices
+        return np.array([x[i] for i in np.sort(unique_indices)])
+
+    @staticmethod
     def init_seed(seed: int = 42):
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.benchmark = False
@@ -190,7 +199,8 @@ class Base:
         _model_path = Path(model_path)
         if _model_path.exists():
             model.load_state_dict(
-                torch.load(model_path, map_location=device), strict=strict
+                torch.load(model_path, map_location=device, weights_only=True),
+                strict=strict,
             )
         else:
             if logger:
@@ -222,12 +232,15 @@ class Base:
         torch.save(model.state_dict(), model_path)
 
     @staticmethod
-    def to_np(x: list | ndarray | Tensor, mapping: dict[str, int] | None = None) -> ndarray:
+    def to_np(
+        x: list | ndarray | Tensor, mapping: dict[str, int] | None = None
+    ) -> ndarray:
         if len(x) == 0:
             return np.array([])
         if isinstance(x, list):
             if isinstance(x[0], str):
                 return Base.to_class_index(x, mapping if mapping is not None else {})
+            return np.array(x)
         if isinstance(x, ndarray):
             return x
         if isinstance(x, Tensor):

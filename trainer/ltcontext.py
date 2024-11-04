@@ -8,8 +8,7 @@ from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 
-from base import Config
-from base.main import Base
+from base import Config, Base
 from trainer import Trainer
 from evaluator import Evaluator
 from visualizer import Visualizer
@@ -236,7 +235,11 @@ class LTContextTrainer(Trainer):
                         target.cpu().numpy(),
                         confidence.cpu().numpy(),
                         f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}.png",
-                        backgrounds=Base.to_class_index(self.cfg.dataset.backgrounds, test_loader.dataset.text_to_int),
+                        int_to_text=test_loader.dataset.int_to_text,
+                        backgrounds=Base.to_class_index(
+                            self.cfg.dataset.backgrounds,
+                            test_loader.dataset.text_to_int,
+                        ),
                     )
 
             acc, edit, f1 = self.test_evaluator.get()

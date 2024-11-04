@@ -1,15 +1,17 @@
 from dataclasses import dataclass
+from typing import Literal
 from einops import rearrange
 from tqdm import tqdm
 import torch
 from torch import Tensor
 from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from base import Config
+from loader import BaseDataLoader
 from visualizer import Visualizer, template
 from evaluator import Evaluator
 from .main import Trainer
@@ -26,7 +28,7 @@ class ASFormerConfig(Config):
     att_type: str
     alpha: float
     p: float
-    scheduler_mode: str
+    scheduler_mode: Literal["min", "max"]
     scheduler_factor: float
     scheduler_patience: int
     mse_weight: float
@@ -62,7 +64,7 @@ class ASFormerScheduler(ReduceLROnPlateau):
     def __init__(
         self,
         optimizer: ASFormerOptimizer,
-        mode: str,
+        mode: Literal["min", "max"],
         factor: float,
         patience: int,
     ):
@@ -158,7 +160,7 @@ class ASFormerTrainer(Trainer):
 
         self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: BaseDataLoader):
         with torch.no_grad():
             for features, mask, labels, video_names in tqdm(test_loader, leave=False):
                 features = features.to(self.device)
@@ -176,6 +178,7 @@ class ASFormerTrainer(Trainer):
                 self.visualizer.plot_action_segmentation(
                     pred[0].cpu().detach().numpy(),
                     labels[0].cpu().numpy(),
+                    int_to_text=test_loader.dataset.int_to_text,
                     file_path=f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.png",
                     palette=template(50, "viridis"),
                 )

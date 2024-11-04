@@ -1,3 +1,4 @@
+from pathlib import Path
 from tqdm import tqdm
 import cv2
 import numpy as np
@@ -135,9 +136,10 @@ class Visualizer(Base):
         pred: ndarray | None = None,
         gt: ndarray | None = None,
         confidences: ndarray | None = None,
-        file_path: str = "action_segmentation.png",
+        file_path: Path | str = "action_segmentation.png",
         backgrounds: np.ndarray = np.array([]),
         num_classes: int = 50,
+        int_to_text: dict[int, str] = dict(),
         palette: list[tuple[float, float, float, float]] | None = None,
         return_canvas: bool = False,
     ):
@@ -148,60 +150,77 @@ class Visualizer(Base):
         if pred is not None and gt is None:
             _pred = Visualizer.mask_label_with_backgrounds(pred, backgrounds)
             pred_segments = Visualizer.to_segments(_pred)
-            fig_size = (10, 2)
+            unique_label = Visualizer.unique([x[0] for x in pred_segments])
+            max_num_segments = len(pred_segments)
+            fig_size = (10, 3)
         elif pred is None and gt is not None:
             _gt = Visualizer.mask_label_with_backgrounds(gt, backgrounds)
             gt_segments = Visualizer.to_segments(_gt)
-            fig_size = (10, 2)
+            unique_label = Visualizer.unique([x[0] for x in gt_segments])
+            max_num_segments = len(gt_segments)
+            fig_size = (10, 3)
         elif pred is not None and gt is not None:
             _pred = Visualizer.mask_label_with_backgrounds(pred, backgrounds)
             pred_segments = Visualizer.to_segments(_pred)
             _gt = Visualizer.mask_label_with_backgrounds(gt, backgrounds)
             gt_segments = Visualizer.to_segments(_gt)
+            unique_label = Visualizer.unique(
+                [x[0] for x in gt_segments] + [x[0] for x in pred_segments]
+            )
             max_num_segments = max(len(pred_segments), len(gt_segments))
             pred_segments += [(-1, (0, 0))] * (max_num_segments - len(pred_segments))
             gt_segments += [(-1, (0, 0))] * (max_num_segments - len(gt_segments))
-            fig_size = (10, 3)
+            fig_size = (10, 4)
 
         if confidences is not None:
             fig_size = (10, fig_size[1] + 1)
 
         fig = plt.figure(figsize=fig_size)
-        fig.subplots_adjust(left=0.06, right=0.99, top=0.98, bottom=0.11)
-        gs = fig.add_gridspec(2, 1)
+        gs = fig.add_gridspec(3, 1)
         acc = [0, 0]  # [Pred, GT]
 
         if (pred is None or gt is None) and confidences is None:
-            bar_ax = fig.add_subplot(gs)  # type: ignore
+            fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.5)
+            legend_anchor = (0.5, -0.5)
+            bar_ax = fig.add_subplot(gs[:, :])  # type: ignore
         elif (pred is None or gt is None) and confidences is not None:
-            bar_ax = fig.add_subplot(gs[0:2])
+            bar_ax = fig.add_subplot(gs[0:3])
+            legend_anchor = (0.5, -0.5)
         elif (pred is not None and gt is not None) and confidences is None:
-            bar_ax = fig.add_subplot(gs[0:2])
+            bar_ax = fig.add_subplot(gs[0:3])
+            legend_anchor = (0.5, -0.5)
         elif (pred is not None and gt is not None) and confidences is not None:
+            fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0.2)
             bar_ax = fig.add_subplot(gs[0:2])
+            legend_anchor = (0.4, -0.7)
 
         if palette is None:
             palette = template(num_classes, "cividis")
 
+        target_bar = []
         for i in range(max_num_segments):
             if pred is not None and gt is None:
-                bar_ax.barh(
+                p = bar_ax.barh(
                     "Pred",
                     pred_segments[i][1][1] - pred_segments[i][1][0],
                     color=palette[pred_segments[i][0]],
                     left=acc,
                 )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
+                if pred_segments[i][0] not in [x[0] for x in target_bar]:
+                    target_bar.append((pred_segments[i][0], p[0]))
             elif pred is None and gt is not None:
-                bar_ax.barh(
+                p = bar_ax.barh(
                     "GT",
                     gt_segments[i][1][1] - gt_segments[i][1][0],
                     color=palette[gt_segments[i][0]],
                     left=acc,
                 )
-                acc[1] += gt_segments[i][1][1] - gt_segments[i][1][0]
+                acc[0] += int(gt_segments[i][1][1] - gt_segments[i][1][0])
+                if gt_segments[i][0] not in [x[0] for x in target_bar]:
+                    target_bar.append((gt_segments[i][0], p[0]))
             elif pred is not None and gt is not None:
-                bar_ax.barh(
+                p = bar_ax.barh(
                     ["Pred", "GT"],
                     [
                         pred_segments[i][1][1] - pred_segments[i][1][0],
@@ -212,9 +231,25 @@ class Visualizer(Base):
                 )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
                 acc[1] += gt_segments[i][1][1] - gt_segments[i][1][0]
+                if pred_segments[i][0] not in [x[0] for x in target_bar]:
+                    target_bar.append((pred_segments[i][0], p[0]))
+                if gt_segments[i][0] not in [x[0] for x in target_bar]:
+                    target_bar.append((gt_segments[i][0], p[1]))
 
         bar_ax.set_xlim(right=acc[0])
         bar_ax.set_xlabel("Frame")
+        ordered_target_bar = sum([target_bar[i::7] for i in range(7)], [])
+        ordered_unique_label = np.concatenate([unique_label[i::7] for i in range(7)])
+        bar_ax.legend(
+            [x[1] for x in ordered_target_bar],
+            [
+                int_to_text[int(ordered_unique_label[i])]
+                for i in range(len(ordered_unique_label))
+            ],
+            bbox_to_anchor=legend_anchor,
+            loc="upper center",
+            ncols=7,
+        )
         if pred is None or gt is None:
             bar_ax.set_yticks([])
 
@@ -234,6 +269,8 @@ class Visualizer(Base):
             plt.close(fig)
             return data
         else:
+            file_path = Path(file_path)
+            file_path.parent.mkdir(parents=True, exist_ok=True)
             fig.savefig(file_path)
             plt.close(fig)
 
