@@ -9,7 +9,7 @@ def cat(num_classes: int, palettes: list) -> list:
     return palettes
 
 
-def hex_to_rgba(_hex) -> tuple[float, float, float, float]:
+def hex_to_rgba(_hex: str) -> tuple[float, float, float, float]:
     _hex = _hex.lstrip("#")
     return (
         int(_hex[0:2], 16) / 255,
@@ -505,6 +505,11 @@ DA_PURPLE10 = list(
 
 def template(n: int, name: str):
     """
-    name: viridis, plasma, inferno, magma, cividis
+    Parameters:
+        n: number of colors
+        name: viridis, plasma, inferno, magma, cividis
+    Returns:
+        list of n colors
+        shape: list of (R, G, B, A) tuples, each element is numpy.float64
     """
     return [mpl.colormaps[name].resampled(n)(i / n) for i in range(n)]

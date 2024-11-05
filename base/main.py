@@ -39,6 +39,7 @@ class DatasetConfig(DictConfig):
     split_dir: str
     gt_dir: str
     feature_dir: str
+    action_dir: str
     prob_dir: str | None
     pseudo_dir: str | None
     semi_per: float | None
@@ -121,7 +122,7 @@ class Base:
     @staticmethod
     def unique(
         x: list | ndarray, return_index: bool = False
-    ) -> ndarray | list[ndarray, ndarray]:
+    ) -> ndarray | tuple[ndarray, ndarray]:
         _, unique_indices = np.unique(x, return_index=True)
         if return_index:
             return np.array([x[i] for i in np.sort(unique_indices)]), unique_indices
@@ -184,7 +185,12 @@ class Base:
         return dirs
 
     @staticmethod
+    def create_config(cfg: dict) -> Config:
+        return Config(**cfg)
+
+    @staticmethod
     def validate_config(cfg: Config):
+        Base.warning("Config validation is not implemented")
         return True
 
     @staticmethod
@@ -289,10 +295,14 @@ class Base:
     def get_class_mapping(
         mapping_path: str, has_header: bool = False, separator: str = " "
     ) -> tuple[dict[str, int], dict[int, str]]:
-        with open(mapping_path, "r") as f:
-            lines = f.readlines()
-        if has_header:
-            lines = lines[1:]
+        try:
+            with open(mapping_path, "r") as f:
+                lines = f.readlines()
+            if has_header:
+                lines = lines[1:]
+        except FileNotFoundError:
+            Base.warning(f"Mapping file was not found in {mapping_path}")
+            return {}, {}
 
         text_to_int = {}
         int_to_text = {}
@@ -353,11 +363,15 @@ class Base:
         class_separator: str = ",",
         text_to_int: dict[str, int] = dict(),
     ) -> dict[str, list[int]]:
-        with open(actions_path, "r") as f:
-            lines = f.readlines()
-            lines = [line.strip() for line in lines if line.strip() != ""]
-        if has_header:
-            lines = lines[1:]
+        try:
+            with open(actions_path, "r") as f:
+                lines = f.readlines()
+                lines = [line.strip() for line in lines if line.strip() != ""]
+            if has_header:
+                lines = lines[1:]
+        except FileNotFoundError:
+            Base.warning(f"Actions file was not found in {actions_path}")
+            return {}
 
         actions = {}
         for line in lines:
@@ -423,9 +437,13 @@ class Base:
         video2 action2
         ...
         """
-        with open(matching_path, "r") as f:
-            lines = f.readlines()
-            lines = [line.strip() for line in lines if line.strip() != ""]
+        try:
+            with open(matching_path, "r") as f:
+                lines = f.readlines()
+                lines = [line.strip() for line in lines if line.strip() != ""]
+        except FileNotFoundError:
+            Base.warning(f"Matching file was not found in {matching_path}")
+            return {}
         video_to_action = {}
         for line in lines:
             video, action = line.split(separator)
