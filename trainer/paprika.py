@@ -154,8 +154,8 @@ class PaprikaTrainer(Trainer):
     def __init__(self, cfg: PaprikaPretrainConfig | PaprikaPseudoConfig, model: Module):
         super().__init__(cfg, model, name="PaprikaTrainer")
         self.cfg = cfg
-        self.criterion = PaprikaCriterion(cfg)  # type: ignore
-        self.optimizer = PaprikaOptimizer(cfg, model)  # type: ignore
+        self.criterion = PaprikaCriterion(cfg)
+        self.optimizer = PaprikaOptimizer(cfg, model)
 
     def make_pseudo_label(self):
         from models.paprika.build_knowledge import obtain_external_knowledge
@@ -165,7 +165,9 @@ class PaprikaTrainer(Trainer):
     def train(self, loader: BaseDataLoader):
         self.model.to(self.device)
         self.scheduler = PaprikaScheduler(
-            self.optimizer, self.cfg, last_epoch=len(loader) * self.cfg.epochs # type: ignore
+            self.optimizer,
+            self.cfg,
+            last_epoch=len(loader) * self.cfg.epochs,
         )
 
         for epoch in range(self.cfg.epochs):

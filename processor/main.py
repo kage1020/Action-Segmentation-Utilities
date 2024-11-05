@@ -21,8 +21,12 @@ class Processor(Base):
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions.txt",
             text_to_int=text_to_int,
         )
-        kfold = KFold(n_splits=cfg.dataset.num_fold, shuffle=True, random_state=cfg.seed)
-        split_dir = Path(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}")
+        kfold = KFold(
+            n_splits=cfg.dataset.num_fold, shuffle=True, random_state=cfg.seed
+        )
+        split_dir = Path(
+            f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}"
+        )
         split_dir.mkdir(parents=True, exist_ok=True)
         matching = Base.get_action_matching(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/matching.txt"
@@ -46,10 +50,12 @@ class Processor(Base):
 
             files.sort()
             if len(files) < cfg.dataset.num_fold:
-                Base.warning(f"Action {action} has less than {cfg.dataset.num_fold} files")
+                Base.warning(
+                    f"Action {action} has less than {cfg.dataset.num_fold} files"
+                )
                 continue
 
-            for i, (train, test) in enumerate(kfold.split(files)): # type: ignore
+            for i, (train, test) in enumerate(kfold.split(files)):
                 train_paths = [files[j].name + "\n" for j in train]
                 train_paths.sort()
                 test_paths = [files[j].name + "\n" for j in test]
@@ -97,6 +103,7 @@ class Processor(Base):
                 )
 
             with open(
-                f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}", "w"
+                f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions/{Path(gt).name}",
+                "w",
             ) as f:
                 f.writelines([f"{action}\n" for action in actions])

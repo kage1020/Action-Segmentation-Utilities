@@ -103,7 +103,7 @@ class C2FTCNCriterion(Module):
             f1.append(pred[j].permute(1, 0)[prev_idx, :])
 
             if activity_labels is not None:
-                feature_activity.extend([activity_labels[j]] * len(idx) * 2)  # type: ignore
+                feature_activity.extend([activity_labels[j]] * len(idx) * 2)
             else:
                 feature_activity = None
 
@@ -180,7 +180,7 @@ class C2FTCNCriterion(Module):
             feature_contrast_loss = 0
         else:
             feat_sim_pos = pos_weight_mat * f11
-            max_val = torch.max(not_same_activity * f11, dim=1, keep_dim=True)[0]  # type: ignore
+            max_val = torch.max(not_same_activity * f11, dim=1, keep_dim=True)[0]
             acc = torch.sum(feat_sim_pos > max_val) / count_pos
             feat_sim_neg_sum = torch.sum(not_same_activity * f11, dim=1)
 
@@ -328,7 +328,7 @@ class C2FTCNTrainer(Trainer):
             f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/gt",
             exist_ok=True,
         )
-        for video_path, gt, _, _ in self.train_loader.dataset.videos:  # type: ignore
+        for video_path, gt, _, _ in self.train_loader.dataset.videos:
             if len(gt) == 0:
                 continue
 
@@ -533,7 +533,7 @@ class C2FTCNTrainer(Trainer):
                 self.device,
             )
 
-            unlabeled_videos = train_loader.dataset.unlabeled  # type: ignore
+            unlabeled_videos = train_loader.dataset.unlabeled
             unlabeled_loader = DataLoader(
                 unlabeled_videos, batch_size=1, shuffle=False, num_workers=4
             )

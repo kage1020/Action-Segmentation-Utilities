@@ -1,3 +1,4 @@
+from typing import Literal
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from asu.base import Base, Config
@@ -35,6 +36,7 @@ class Evaluator(Base):
         self.tps = [0] * len(taus)
         self.fps = [0] * len(taus)
         self.fns = [0] * len(taus)
+        self.aucs = []
 
     @staticmethod
     def accuracy_frame(
@@ -176,6 +178,7 @@ class Evaluator(Base):
         self,
         gt: list | ndarray | Tensor,
         pred: list | ndarray | Tensor,
+        prob: ndarray | Tensor | None = None,
     ) -> None:
         self.num_videos += 1
         self.num_total_frames += len(gt)
@@ -185,29 +188,39 @@ class Evaluator(Base):
         self.tps = [self.tps[i] + tps[i] for i in range(len(self.tps))]
         self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
         self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
+        if prob:
+            self.aucs.append(Evaluator.auc(gt, prob, self.backgrounds))
 
-    def get(self) -> tuple[float, float, list[float]]:
-        acc = self.num_correct_frames / self.num_total_frames * 100
-        edit = self.edit_distances / self.num_videos
-        precision = [
-            self.tps[i] / (self.tps[i] + self.fps[i])
-            if self.tps[i] + self.fps[i] > 0
-            else 0.0
-            for i in range(len(self.tps))
-        ]
-        recall = [
-            self.tps[i] / (self.tps[i] + self.fns[i])
-            if self.tps[i] + self.fns[i] > 0
-            else 0.0
-            for i in range(len(self.tps))
-        ]
-        f1 = [
-            200 * precision[i] * recall[i] / (precision[i] + recall[i])
-            if precision[i] + recall[i] > 0
-            else 0.0
-            for i in range(len(precision))
-        ]
-        return acc, edit, f1
+    def get(
+        self,
+        task: Literal[
+            "action_segmentation", "anomaly_detection"
+        ] = "action_segmentation",
+    ) -> tuple[float, float, list[float]] | float:
+        if task == "action_segmentation":
+            acc = self.num_correct_frames / self.num_total_frames * 100
+            edit = self.edit_distances / self.num_videos
+            precision = [
+                self.tps[i] / (self.tps[i] + self.fps[i])
+                if self.tps[i] + self.fps[i] > 0
+                else 0.0
+                for i in range(len(self.tps))
+            ]
+            recall = [
+                self.tps[i] / (self.tps[i] + self.fns[i])
+                if self.tps[i] + self.fns[i] > 0
+                else 0.0
+                for i in range(len(self.tps))
+            ]
+            f1 = [
+                200 * precision[i] * recall[i] / (precision[i] + recall[i])
+                if precision[i] + recall[i] > 0
+                else 0.0
+                for i in range(len(precision))
+            ]
+            return acc, edit, f1
+        elif task == "anomaly_detection":
+            return np.mean(self.aucs)
 
     def reset(self) -> None:
         self.num_videos = 0
@@ -217,6 +230,7 @@ class Evaluator(Base):
         self.tps = [0] * len(self.tps)
         self.fps = [0] * len(self.fps)
         self.fns = [0] * len(self.fns)
+        self.aucs = []
 
     def save(self, x: ndarray, path: str) -> None:
         np.save(path, x)

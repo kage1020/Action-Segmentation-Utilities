@@ -13,7 +13,7 @@ class ImageBatch(Dataset):
         super(ImageBatch, self).__init__()
         self.image_paths = image_paths
         self.temporal_window = temporal_window
-        self.optical_flow = cv2.optflow.DualTVL1OpticalFlow.create()  # type: ignore
+        self.optical_flow = cv2.optflow.DualTVL1OpticalFlow.create()
         self.to_rgb = transforms.Compose(
             [
                 transforms.Resize((224, 224)),
@@ -42,7 +42,7 @@ class ImageBatch(Dataset):
             for i in range(len(grays) - 1)
         ]
         flows.append(flows[-1])
-        self.images = torch.stack([self.to_rgb(im) for im in images], dim=0)  # type: ignore
+        self.images = torch.stack([self.to_rgb(im) for im in images], dim=0)
         self.flows = torch.stack([torch.from_numpy(flow) for flow in flows], dim=0)
 
     def __len__(self):
@@ -63,7 +63,7 @@ class ImageBatch(Dataset):
             self.images[-1] = self.images[-2]
             self.flows[-1] = self.flows[-2]
         else:
-            self.images[-1] = self.to_rgb(  # type: ignore
+            self.images[-1] = self.to_rgb(
                 Image.open(self.image_paths[index + self.temporal_window // 2 + 1])
             )
             self.flows[-1] = torch.from_numpy(

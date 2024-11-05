@@ -436,9 +436,9 @@ class I3D(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
-                x = self._modules[end_point](x)  # type: ignore
+                x = self._modules[end_point](x)
 
-        logits: Tensor = self.logits(self.dropout(self.avg_pool(x)))  # type: ignore
+        logits: Tensor = self.logits(self.dropout(self.avg_pool(x)))
         if self._spatial_squeeze:
             logits = logits.squeeze(3).squeeze(3)
 
@@ -453,6 +453,6 @@ class I3D(nn.Module):
         """
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
-                x = self._modules[end_point](x)  # type: ignore
+                x = self._modules[end_point](x)
 
         return self.avg_pool(x)

@@ -26,7 +26,7 @@ class ImageBatch(Dataset):
         self.images = (
             torch.stack(
                 [self.to_rgb(Image.open(self.image_paths[i])) for i in indices],
-                dim=0,  # type: ignore
+                dim=0,
             )
             if len(self.image_paths) > 0
             else torch.zeros(0)
@@ -48,7 +48,7 @@ class ImageBatch(Dataset):
         if index >= len(self.image_paths) - self.temporal_window // 2 - 1:
             self.images[-1] = self.images[-2]
         else:
-            self.images[-1] = self.to_rgb(  # type: ignore
+            self.images[-1] = self.to_rgb(
                 Image.open(self.image_paths[index + self.temporal_window // 2 + 1])
             )
 

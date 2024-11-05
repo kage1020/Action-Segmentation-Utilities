@@ -182,7 +182,7 @@ class Visualizer(Base):
         if (pred is None or gt is None) and confidences is None:
             fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.5)
             legend_anchor = (0.5, -0.5)
-            bar_ax = fig.add_subplot(gs[:, :])  # type: ignore
+            bar_ax = fig.add_subplot(gs[:, :])
         elif (pred is None or gt is None) and confidences is not None:
             bar_ax = fig.add_subplot(gs[0:3])
             legend_anchor = (0.5, -0.5)
@@ -317,13 +317,13 @@ class Visualizer(Base):
                 return_canvas=True,
             )
             segmentation = cv2.resize(
-                segmentation,  # type: ignore
+                segmentation,
                 None,
-                fx=video_size[1] / segmentation.shape[1],  # type: ignore
+                fx=video_size[1] / segmentation.shape[1],
                 fy=1.0,
-            )  # type: ignore
-            video_size = (video_size[0] + segmentation.shape[0], video_size[1])  # type: ignore
-            bar_width = max(5, int(segmentation.shape[1] * 0.005))  # type: ignore
+            )
+            video_size = (video_size[0] + segmentation.shape[0], video_size[1])
+            bar_width = max(5, int(segmentation.shape[1] * 0.005))
 
         if show_label:
             video_size = (video_size[0] + text_area_size[0], video_size[1])
@@ -335,7 +335,7 @@ class Visualizer(Base):
         ) as writer:
             for i, image in enumerate(tqdm(reader, total=reader.num_frames)):
                 if show_segment:
-                    seg = segmentation.copy()  # type: ignore
+                    seg = segmentation.copy()
                     bar_start = i
                     bar_end = i + bar_width
                     seg[:, bar_start:bar_end] = 250
@@ -346,7 +346,7 @@ class Visualizer(Base):
                     )
                     if pred is not None and gt is None:
                         cv2.putText(
-                            img=seg,  # type: ignore
+                            img=seg,
                             text="Pred: " + reverse_mapping[pred[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -359,7 +359,7 @@ class Visualizer(Base):
                         )
                     if pred is None and gt is not None:
                         cv2.putText(
-                            img=seg,  # type: ignore
+                            img=seg,
                             text="GT: " + reverse_mapping[gt[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -372,7 +372,7 @@ class Visualizer(Base):
                         )
                     if pred is not None and gt is not None:
                         cv2.putText(
-                            img=seg,  # type: ignore
+                            img=seg,
                             text="Pred: " + reverse_mapping[pred[i]],
                             org=(
                                 reader.image_size[1] // 30,
@@ -384,7 +384,7 @@ class Visualizer(Base):
                             thickness=5,
                         )
                         cv2.putText(
-                            img=seg,  # type: ignore
+                            img=seg,
                             text="GT: " + reverse_mapping[gt[i]],
                             org=(
                                 reader.image_size[1] * 16 // 30,
