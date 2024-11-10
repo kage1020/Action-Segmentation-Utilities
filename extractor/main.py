@@ -96,8 +96,9 @@ class Extractor(Base):
             return
 
         for video_path in tqdm(self.video_paths, leave=False):
-            video_name = video_path.stem
-            out_dir = self.out_dir / video_path.parent.name / video_name
+            out_dir = self.image_dir / video_path.relative_to(
+                video_path.parent
+            ).with_suffix("")
 
             if out_dir.exists():
                 continue
@@ -105,5 +106,5 @@ class Extractor(Base):
             out_dir.mkdir(parents=True, exist_ok=True)
 
             ffmpeg.input(str(video_path)).output(
-                str(out_dir / "%08d.png"), loglevel="quiet"
+                str(out_dir / "%08d.jpg"), loglevel="quiet"
             ).run()
