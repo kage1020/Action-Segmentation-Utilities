@@ -67,7 +67,7 @@ class S3DDataset(Dataset):
         self.image_dir = Path(image_dir)
         Base.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = Base.get_dirs(image_dir, recursive=True)
-        Base.info(f"\rLoading images from {self.image_dir} ... Done")
+        Base.info("Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window

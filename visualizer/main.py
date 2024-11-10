@@ -241,7 +241,7 @@ class Visualizer(Base):
                     "Pred",
                     pred_segments[i][1][1] - pred_segments[i][1][0],
                     color=palette[pred_segments[i][0]],
-                    left=acc,
+                    left=acc[0],
                 )
                 acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
                 if pred_segments[i][0] not in [x[0] for x in target_bar]:
@@ -251,7 +251,7 @@ class Visualizer(Base):
                     "GT",
                     gt_segments[i][1][1] - gt_segments[i][1][0],
                     color=palette[gt_segments[i][0]],
-                    left=acc,
+                    left=acc[0],
                 )
                 acc[0] += int(gt_segments[i][1][1] - gt_segments[i][1][0])
                 if gt_segments[i][0] not in [x[0] for x in target_bar]:
