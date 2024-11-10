@@ -1,6 +1,7 @@
 import logging
 from pprint import pformat
 from dataclasses import dataclass
+import sys
 
 
 @dataclass(frozen=True)
@@ -21,13 +22,22 @@ class Logger:
         self.width = width
 
     @staticmethod
-    def log(message: str | dict | list | object, level: str = "info"):
+    def log(message: str | dict | list | object, level: str = "info", end: str = "\n"):
         if level == "info":
-            print(Color.GREEN + pformat(message, width=100)[1:-1] + Color.RESET)
+            print(
+                Color.GREEN + pformat(message, width=100)[1:-1] + Color.RESET, end=end
+            )
         elif level == "warning":
-            print(Color.YELLOW + pformat(message, width=100)[1:-1] + Color.RESET)
+            print(
+                Color.YELLOW + pformat(message, width=100)[1:-1] + Color.RESET, end=end
+            )
         elif level == "error":
-            print(Color.RED + pformat(message, width=100)[1:-1] + Color.RESET)
+            print(Color.RED + pformat(message, width=100)[1:-1] + Color.RESET, end=end)
+
+    @staticmethod
+    def clear():
+        sys.stdout.write("\033[K")
+        sys.stdout.flush()
 
     def info(self, message: str | dict | list | object):
         self.logger.info(

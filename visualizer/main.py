@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 from sklearn.manifold import TSNE
 from sklearn.metrics import roc_curve, RocCurveDisplay
 
@@ -16,8 +15,6 @@ from visualizer.reader import VideoReader
 from torch import Tensor
 from numpy import ndarray
 
-matplotlib.use("Agg")
-
 
 class Visualizer(Base):
     metrics: dict[str, list[tuple[int, float]]] = dict()
@@ -26,7 +23,9 @@ class Visualizer(Base):
         super().__init__(name="Visualizer")
 
     @staticmethod
-    def plot_feature(feature: ndarray, file_path: str = "feature.png"):
+    def plot_feature(
+        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
+    ):
         assert isinstance(feature, ndarray) or isinstance(
             feature, Tensor
         ), "Feature must be a numpy array or a torch tensor"
@@ -37,11 +36,23 @@ class Visualizer(Base):
         axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap="jet")
         fig.colorbar(axfig, ax=ax)
         fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-        fig.savefig(file_path)
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+            return fig
+        else:
+            matplotlib.use("Agg")
+            fig.savefig(file_path)
         plt.close(fig)
 
     @staticmethod
-    def plot_tsne(feature: ndarray, file_path: str = "tsne.png"):
+    def plot_tsne(
+        feature: ndarray,
+        gt: list[int] | None = None,
+        file_path: str | Path = "tsne.png",
+        is_jupyter: bool = False,
+        frame_index: bool = False,
+    ):
         """
         feature: 2D array of shape (n_frames, n_features)
         """
@@ -50,16 +61,35 @@ class Visualizer(Base):
         ), "Feature must be a numpy array or a torch tensor"
         assert len(feature.shape) == 2, "Feature must be a 2D array"
 
-        tsne = TSNE(n_components=2)
+        tsne = TSNE(n_components=2, random_state=0)
         results = tsne.fit_transform(feature)
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        axfig = ax.scatter(results[:, 0], results[:, 1])
+        axfig = ax.scatter(results[:, 0], results[:, 1], c=gt)
         fig.colorbar(axfig, ax=ax)
         fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-        fig.savefig(file_path)
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+        else:
+            matplotlib.use("Agg")
+            fig.savefig(file_path)
         plt.close(fig)
+
+        if frame_index:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            axfig = ax.scatter(results[:, 0], results[:, 1], c=range(len(gt)))
+            fig.colorbar(axfig, ax=ax)
+            fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+            if is_jupyter:
+                matplotlib.use("nbAgg")
+                fig.show()
+            else:
+                matplotlib.use("Agg")
+                fig.savefig(str(file_path).replace(".png", "_frame_index.png"))
+            plt.close(fig)
 
     @staticmethod
     def plot_loss(
@@ -122,6 +152,8 @@ class Visualizer(Base):
         ax.set_ylabel("Confidence")
         fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
         if not axis:
+            from matplotlib.backends.backend_agg import FigureCanvasAgg
+
             canvas = FigureCanvasAgg(fig)
             canvas.draw()
             data = np.array(canvas.buffer_rgba(), dtype="uint8")[:, :, :3]
@@ -142,6 +174,7 @@ class Visualizer(Base):
         int_to_text: dict[int, str] = dict(),
         palette: list[tuple[float, float, float, float]] | None = None,
         return_canvas: bool = False,
+        dynamic_palette: bool = False,
     ):
         assert (
             pred is not None or gt is not None
@@ -196,6 +229,10 @@ class Visualizer(Base):
 
         if palette is None:
             palette = template(num_classes, "cividis")
+        if dynamic_palette:
+            _palette = template(len(unique_label), "cividis")
+            for i, label in enumerate(unique_label):
+                palette[label] = _palette[i]
 
         target_bar = []
         for i in range(max_num_segments):
@@ -263,6 +300,8 @@ class Visualizer(Base):
             bar_ax.set_xticks([])
             bar_ax.set_xlabel("")
         if return_canvas:
+            from matplotlib.backends.backend_agg import FigureCanvasAgg
+
             canvas = FigureCanvasAgg(fig)
             canvas.draw()
             data = np.array(canvas.buffer_rgba(), dtype=np.uint8)[:, :, :3]

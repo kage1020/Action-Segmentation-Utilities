@@ -13,6 +13,7 @@ from logger import Logger
 
 from numpy import ndarray
 from torch import Tensor
+from concurrent.futures import ThreadPoolExecutor
 
 
 @dataclass
@@ -145,8 +146,8 @@ class Base:
         return torch.device(f"cuda:{cuda}" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
-    def info(message: str):
-        Logger.log(message)
+    def info(message: str, end: str = "\n"):
+        Logger.log(message, end=end)
 
     @staticmethod
     def warning(message: str):
@@ -155,6 +156,10 @@ class Base:
     @staticmethod
     def error(message: str):
         Logger.log(message, level="error")
+
+    @staticmethod
+    def clear_line():
+        Logger.clear()
 
     @staticmethod
     def get_logger(name: str = "Base") -> Logger:
@@ -179,9 +184,15 @@ class Base:
     def get_dirs(path: str | Path, recursive: bool = False) -> list[Path]:
         path = Path(path)
         dirs = [d for d in path.iterdir() if d.is_dir()]
+
         if recursive:
-            for d in dirs:
-                dirs.extend(Base.get_dirs(d, recursive))
+            with ThreadPoolExecutor() as executor:
+                sub_dirs = list(
+                    executor.map(lambda d: Base.get_dirs(d, recursive), dirs)
+                )
+                for sublist in sub_dirs:
+                    dirs.extend(sublist)
+
         return dirs
 
     @staticmethod

@@ -65,7 +65,9 @@ class S3DDataset(Dataset):
     ):
         super().__init__()
         self.image_dir = Path(image_dir)
+        Base.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = Base.get_dirs(image_dir, recursive=True)
+        Base.info(f"\rLoading images from {self.image_dir} ... Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window
@@ -84,6 +86,9 @@ class S3DDataset(Dataset):
     def __getitem__(self, idx: int):
         if len(self.boundaries) > 0:
             video_name, boundaries = self.boundaries[idx]
+            boundary_idx_in_video = [
+                b for b in self.boundaries if b[0] == video_name
+            ].index((video_name, boundaries))
             image_paths = [
                 self.image_dir / video_name / f"{i:06d}.jpg"
                 if (self.image_dir / video_name / f"{i:06d}.jpg").exists()
@@ -97,9 +102,7 @@ class S3DDataset(Dataset):
                 batch_size=1,
                 num_workers=self.num_workers,
                 shuffle=False,
-            ), self.image_dir / (
-                video_name + f"_{boundaries[0]:06d}_{boundaries[1]:06d}"
-            )
+            ), self.image_dir / (video_name + f"_{boundary_idx_in_video+1:02d}")
         else:
             image_dir = self.image_dirs[idx]
             image_paths = list(image_dir.glob("*.png"))
