@@ -85,8 +85,8 @@ class ImageBatch(Dataset):
 class I3DDataset(Dataset):
     def __init__(self, image_dir: str | Path, temporal_window: int):
         super().__init__()
-        image_paths = glob.glob(f"{image_dir}/*.png")
-        image_paths += glob.glob(f"{image_dir}/*.jpg")
+        image_paths = glob.glob(f"{image_dir}/*.png", recursive=True)
+        image_paths += glob.glob(f"{image_dir}/*.jpg", recursive=True)
         self.image_paths = [Path(image_path) for image_path in image_paths]
         self.temporal_window = temporal_window
 

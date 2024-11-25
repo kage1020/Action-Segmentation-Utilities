@@ -370,4 +370,4 @@ class S3D(nn.Module):
         return out
 
     def extract_text_features(self, x: list[str]):
-        return self.text_module(x)
+        return self.text_module(x)["text_embedding"]
