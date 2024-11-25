@@ -60,6 +60,7 @@ class Visualizer(Base):
             feature, Tensor
         ), "Feature must be a numpy array or a torch tensor"
         assert len(feature.shape) == 2, "Feature must be a 2D array"
+        assert len(feature) == len(gt), "Length of feature and gt must be the same"
 
         tsne = TSNE(n_components=2, random_state=0)
         results = tsne.fit_transform(feature)
