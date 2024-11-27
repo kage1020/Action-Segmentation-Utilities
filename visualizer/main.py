@@ -24,7 +24,7 @@ class Visualizer(Base):
 
     @staticmethod
     def plot_feature(
-        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
+        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False, cmap: str = "viridis"
     ):
         assert isinstance(feature, ndarray) or isinstance(
             feature, Tensor
@@ -33,7 +33,7 @@ class Visualizer(Base):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap="jet")
+        axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
         fig.colorbar(axfig, ax=ax)
         fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
         if is_jupyter:

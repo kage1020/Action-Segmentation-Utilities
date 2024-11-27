@@ -507,7 +507,7 @@ def template(n: int, name: str):
     """
     Parameters:
         n: number of colors
-        name: viridis, plasma, inferno, magma, cividis
+        name: viridis, plasma, inferno, magma, cividis, twilight, turbo, tab20, etc
     Returns:
         list of n colors
         shape: list of (R, G, B, A) tuples, each element is numpy.float64
