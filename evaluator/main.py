@@ -62,31 +62,33 @@ class Evaluator(Base):
 
     @staticmethod
     def levenshtein(x: list | ndarray | Tensor, y: list | ndarray | Tensor) -> int:
-        n = len(x)
-        m = len(y)
-        dp = np.zeros((n + 1, m + 1))
+        m = len(x)
+        n = len(y)
+        dp = np.zeros((m + 1, n + 1))
+        for i in range(1, m + 1):
+            dp[i, 0] = i
         for i in range(1, n + 1):
-            dp[i][0] = dp[i - 1][0] + 1
-        for j in range(1, m + 1):
-            dp[0][j] = dp[0][j - 1] + 1
+            dp[0, i] = i
         for i in range(1, n + 1):
             for j in range(1, m + 1):
-                dp[i][j] = min(
-                    dp[i - 1][j] + 1,
-                    dp[i][j - 1] + 1,
-                    dp[i - 1][j - 1] + (x[i - 1] != y[j - 1]),
+                dp[j, i] = min(
+                    dp[j - 1, i] + 1,
+                    dp[j, i - 1] + 1,
+                    dp[j - 1, i - 1] + int(x[j - 1] != y[i - 1]),
                 )
-        return dp[n][m]
+        return dp[m][n]
 
     @staticmethod
     def edit_score(
         gt: list | ndarray | Tensor,
         pred: list | ndarray | Tensor,
+        backgrounds: list | ndarray | Tensor = [],
     ) -> float:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
-        gt_segments = Evaluator.to_segments(_gt)
-        pred_segments = Evaluator.to_segments(_pred)
+        _backgrounds = Evaluator.to_np(backgrounds)
+        gt_segments = Evaluator.to_segments(_gt, _backgrounds)
+        pred_segments = Evaluator.to_segments(_pred, _backgrounds)
         if len(gt_segments) == 0 or len(pred_segments) == 0:
             return 0.0
         x, _ = zip(*gt_segments)
@@ -104,11 +106,13 @@ class Evaluator(Base):
         gt: list | ndarray | Tensor,
         pred: list | ndarray | Tensor,
         tau: float,
+        backgrounds: list | ndarray | Tensor = [],
     ) -> tuple[int, int, int]:
         _gt = Evaluator.to_np(gt)
         _pred = Evaluator.to_np(pred)
-        gt_segments = Evaluator.to_segments(_gt)
-        pred_segments = Evaluator.to_segments(_pred)
+        _backgrounds = Evaluator.to_np(backgrounds)
+        gt_segments = Evaluator.to_segments(_gt, _backgrounds)
+        pred_segments = Evaluator.to_segments(_pred, _backgrounds)
         tp = 0
         fp = 0
         fn = 0
@@ -176,15 +180,17 @@ class Evaluator(Base):
 
     def add(
         self,
-        gt: list | ndarray | Tensor,
-        pred: list | ndarray | Tensor,
+        gt: ndarray | Tensor,
+        pred: ndarray | Tensor,
         prob: ndarray | Tensor | None = None,
     ) -> None:
         self.num_videos += 1
         self.num_total_frames += len(gt)
-        self.num_correct_frames += round(len(gt) * Evaluator.accuracy_frame(gt, pred))
-        self.edit_distances += Evaluator.edit_score(gt, pred)
-        tps, fps, fns = zip(*[Evaluator.tp_fp_fn(gt, pred, tau) for tau in self.taus])
+        self.num_correct_frames += (gt == pred).sum()
+        self.edit_distances += Evaluator.edit_score(gt, pred, self.backgrounds)
+        tps, fps, fns = zip(
+            *[Evaluator.tp_fp_fn(gt, pred, tau, self.backgrounds) for tau in self.taus]
+        )
         self.tps = [self.tps[i] + tps[i] for i in range(len(self.tps))]
         self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
         self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
@@ -232,5 +238,9 @@ class Evaluator(Base):
         self.fns = [0] * len(self.fns)
         self.aucs = []
 
-    def save(self, x: ndarray, path: str) -> None:
+    def save_labels(self, x: list, path: str) -> None:
+        with open(path, "w") as f:
+            f.writelines([f"{item}\n" for item in x])
+
+    def save_np(self, x: ndarray, path: str) -> None:
         np.save(path, x)

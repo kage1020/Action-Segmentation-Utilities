@@ -209,9 +209,11 @@ class Base:
         model: Module,
         model_path: str,
         device: torch.device | str = "cpu",
-        logger=None,
+        logger = None,
         strict: bool = True,
     ):
+        if not logger:
+            logger = Base.get_logger()
         model = model.to(device)
         _model_path = Path(model_path)
         if _model_path.exists():
@@ -219,11 +221,9 @@ class Base:
                 torch.load(model_path, map_location=device, weights_only=True),
                 strict=strict,
             )
+            logger.info(f"Model was loaded from {model_path}")
         else:
-            if logger:
-                logger.warning(f"Model was not found in {model_path}")
-            else:
-                print(f"Model was not found in {model_path}")
+            logger.warning(f"Model was not found in {model_path}")
         return model
 
     @staticmethod
@@ -502,16 +502,19 @@ class Base:
         return boundaries
 
     @staticmethod
-    def to_segments(x: ndarray):
-        diff = np.diff(x, prepend=-100)
+    def to_segments(x: ndarray, backgrounds: ndarray | None = np.array([])):
+        _x = np.array(x)
+        diff = np.diff(_x, prepend=-100)
         indices = np.where(diff != 0)[0]
         segments = []
 
         for i in range(len(indices) - 1):
             start = indices[i]
             end = indices[i + 1]
-            segments.append((x[start], (start, end)))
-        segments.append((x[indices[-1]], (indices[-1], len(x))))
+            if _x[start] not in backgrounds:
+                segments.append((_x[start], (start, end)))
+        if _x[indices[-1]] not in backgrounds:
+            segments.append((_x[indices[-1]], (indices[-1], len(_x))))
 
         return segments
 
