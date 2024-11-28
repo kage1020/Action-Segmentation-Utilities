@@ -294,6 +294,16 @@ class Base:
         return image_paths
 
     @staticmethod
+    def load_file(path: str | Path):
+        with open(path, "r") as f:
+            return [line.strip() for line in f.readlines()]
+
+    @staticmethod
+    def save_file(path: str | Path, x: list[str]):
+        with open(path, "w") as f:
+            f.write("\n".join(x))
+
+    @staticmethod
     def load_image(img_path: str) -> ndarray:
         return cv2.imread(img_path)
 
@@ -480,7 +490,7 @@ class Base:
         self.video_to_action = video_to_action
 
     @staticmethod
-    def get_boundaries(boundary_dir: Path) -> dict[str, list[list[int]]]:
+    def get_boundaries(boundary_dir: Path) -> dict[str, list[tuple[int, int]]]:
         """
         Get the boundaries of the videos
 

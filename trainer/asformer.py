@@ -112,7 +112,11 @@ class ASFormerTrainer(Trainer):
                     _loss, dict_loss = self.criterion(output, labels, mask)
                     loss += _loss
                     self.visualizer.add_metrics(
-                        epoch, {"CE": dict_loss["ce"], "MSE": dict_loss["mse"]}
+                        epoch,
+                        {
+                            "CE Loss": dict_loss["ce"].item(),
+                            "MSE Loss": dict_loss["mse"].item(),
+                        },
                     )
                 epoch_loss += loss.item()
 
