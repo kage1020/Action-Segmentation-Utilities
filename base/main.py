@@ -209,7 +209,7 @@ class Base:
         model: Module,
         model_path: str,
         device: torch.device | str = "cpu",
-        logger = None,
+        logger=None,
         strict: bool = True,
     ):
         if not logger:

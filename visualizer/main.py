@@ -24,7 +24,10 @@ class Visualizer(Base):
 
     @staticmethod
     def plot_feature(
-        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False, cmap: str = "viridis"
+        feature: ndarray,
+        file_path: str = "feature.png",
+        is_jupyter: bool = False,
+        cmap: str = "viridis",
     ):
         assert isinstance(feature, ndarray) or isinstance(
             feature, Tensor
