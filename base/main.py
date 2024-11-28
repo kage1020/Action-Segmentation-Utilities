@@ -1,6 +1,7 @@
 import time
 import glob
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 import random
 from dataclasses import asdict, astuple, dataclass
 import cv2
@@ -13,7 +14,6 @@ from logger import Logger
 
 from numpy import ndarray
 from torch import Tensor
-from concurrent.futures import ThreadPoolExecutor
 
 
 @dataclass

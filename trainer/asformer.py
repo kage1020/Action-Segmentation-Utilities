@@ -48,11 +48,11 @@ class ASFormerCriterion(Module):
         prev = F.log_softmax(pred[0, :-1], dim=1)
         next_ = F.log_softmax(pred.detach()[0, 1:], dim=1)
         mse = self.mse(prev, next_)
-        loss += self.mse_weight * torch.mean(
+        mse = self.mse_weight * torch.mean(
             torch.clamp(mse.permute(1, 0), min=0, max=16) * mask[0, :, 1:]
         )
 
-        return loss
+        return loss + mse, {"ce": loss, "mse": mse}
 
 
 class ASFormerOptimizer(Adam):
@@ -109,7 +109,11 @@ class ASFormerTrainer(Trainer):
                 outputs = self.model(features, mask)
                 loss: Tensor = torch.tensor(0).float().to(self.device)
                 for output in outputs:
-                    loss += self.criterion(output, labels, mask)
+                    _loss, dict_loss = self.criterion(output, labels, mask)
+                    loss += _loss
+                    self.visualizer.add_metrics(
+                        epoch, {"CE": dict_loss["ce"], "MSE": dict_loss["mse"]}
+                    )
                 epoch_loss += loss.item()
 
                 loss.backward()
@@ -133,7 +137,7 @@ class ASFormerTrainer(Trainer):
             self.visualizer.add_metrics(
                 epoch,
                 {
-                    "Loss": epoch_loss,
+                    "Epoch Loss": epoch_loss,
                     "Acc": acc,
                     "Edit": edit,
                     "F1@10": f1[0],
@@ -157,6 +161,7 @@ class ASFormerTrainer(Trainer):
 
             self.model.eval()
             epoch_loss = 0
+            self.test(test_loader)
 
         self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
