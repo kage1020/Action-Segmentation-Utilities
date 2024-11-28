@@ -161,26 +161,34 @@ class ASFormerTrainer(Trainer):
         self.visualizer.save_metrics(f"{self.hydra_dir}/{self.cfg.result_dir}")
 
     def test(self, test_loader: BaseDataLoader):
+        palette = template(len(test_loader.dataset.text_to_int), "viridis")
         with torch.no_grad():
             for features, mask, labels, video_names in tqdm(test_loader, leave=False):
                 features = features.to(self.device)
                 mask = mask.to(self.device)
 
                 outputs = self.model(features, mask)
-                pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)
+                pred = torch.argmax(F.softmax(outputs[-1], dim=1), dim=1)[0]
+                confidence = torch.max(F.softmax(outputs[-1][0], dim=0), dim=0).values
                 self.test_evaluator.add(
-                    labels[0].cpu().numpy(), pred[0].cpu().detach().numpy()
+                    labels[0].cpu().numpy(), pred.cpu().detach().numpy()
                 )
-                self.test_evaluator.save(
-                    pred[0].cpu().numpy(),
-                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.npy",
+                self.test_evaluator.save_labels(
+                    list(
+                        map(
+                            test_loader.dataset.int_to_text.get,
+                            pred.cpu().detach().numpy(),
+                        )
+                    ),
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.txt",
                 )
                 self.visualizer.plot_action_segmentation(
-                    pred[0].cpu().detach().numpy(),
+                    pred.cpu().detach().numpy(),
                     labels[0].cpu().numpy(),
+                    confidences=confidence.cpu().detach().numpy(),
                     int_to_text=test_loader.dataset.int_to_text,
                     file_path=f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.png",
-                    palette=template(50, "viridis"),
+                    palette=palette,
                 )
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
