@@ -216,7 +216,7 @@ class Base:
             logger = Base.get_logger()
         model = model.to(device)
         _model_path = Path(model_path)
-        if _model_path.exists():
+        if _model_path.exists() and _model_path.is_file():
             model.load_state_dict(
                 torch.load(model_path, map_location=device, weights_only=True),
                 strict=strict,

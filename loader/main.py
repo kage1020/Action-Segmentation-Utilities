@@ -48,6 +48,7 @@ class BaseDataset(Dataset, Base):
         ) as f:
             lines = f.readlines()
             self.videos = [Path(line.strip()).stem for line in lines if line.strip()]
+        self.info(f"{len(self.videos)} videos loaded")
 
     def __get_video(self, video_path: Path):
         features = np.load(video_path)
