@@ -42,7 +42,9 @@ class ASFormerCriterion(Module):
         self.num_classes = num_classes
         self.mse_weight = mse_weight
 
-    def forward(self, pred: Tensor, labels: Tensor, mask: Tensor) -> Tensor:
+    def forward(
+        self, pred: Tensor, labels: Tensor, mask: Tensor
+    ) -> tuple[Tensor, dict[str, Tensor]]:
         pred = rearrange(pred, "b c t -> b t c")
         loss = self.ce(pred[0], labels[0])
         prev = F.log_softmax(pred[0, :-1], dim=1)

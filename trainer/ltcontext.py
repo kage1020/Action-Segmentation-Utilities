@@ -68,7 +68,9 @@ class LTContextCriterion(Module):
         self.mse_clip_value = mse_clip_value
         self.mse_weight = mse_weight
 
-    def forward(self, logits: Tensor, targets: Tensor) -> Tensor:
+    def forward(
+        self, logits: Tensor, targets: Tensor
+    ) -> tuple[Tensor, dict[str, Tensor]]:
         """
         Args:
             logits (Tensor): [n_stages, batch_size, n_classes, n_frames]
@@ -92,7 +94,7 @@ class LTContextCriterion(Module):
                 )
             )
 
-        return loss["loss_ce"] + loss["loss_mse"] * self.mse_weight
+        return loss["loss_ce"] + loss["loss_mse"] * self.mse_weight, loss
 
 
 class LTContextOptimizer(Adam):
@@ -162,7 +164,14 @@ class LTContextTrainer(Trainer):
                 self.optimizer.zero_grad()
 
                 logits = self.model(features, masks)
-                loss = self.criterion(logits, targets)
+                loss, dict_loss = self.criterion(logits, targets)
+                self.visualizer.add_metrics(
+                    epoch,
+                    {
+                        "CE Loss": dict_loss["loss_ce"].item(),
+                        "MSE Loss": dict_loss["loss_mse"].item(),
+                    },
+                )
                 epoch_loss += loss.item()
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -185,7 +194,7 @@ class LTContextTrainer(Trainer):
             self.visualizer.add_metrics(
                 epoch,
                 {
-                    "loss": epoch_loss,
+                    "Epoch Loss": epoch_loss,
                     "Acc": acc,
                     "Edit": edit,
                     "F1@10": f1[0],
@@ -221,7 +230,7 @@ class LTContextTrainer(Trainer):
                 targets = targets.to(self.device)
 
                 logits = self.model(features, masks)
-                loss = self.criterion(logits, targets)
+                loss, _ = self.criterion(logits, targets)
                 epoch_loss += loss.item()
 
                 preds = torch.argmax(logits[-1], dim=1)
