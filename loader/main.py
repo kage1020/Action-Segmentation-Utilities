@@ -9,6 +9,17 @@ from torch.nn import Module
 from base import Base, Config
 
 
+class NoopDataset(Dataset):
+    def __init__(self):
+        super().__init__()
+
+    def __len__(self):
+        return 0
+
+    def __getitem__(self, idx: int):
+        return 0
+
+
 class BaseDataset(Dataset, Base):
     def __init__(self, cfg: Config, name: str = "BaseDataset", train: bool = True):
         super(Dataset, self).__init__(
