@@ -2454,6 +2454,16 @@ testing = ["h5py (>=3.7.0)", "huggingface-hub (>=0.12.1)", "hypothesis (>=6.70.2
 torch = ["safetensors[numpy]", "torch (>=1.10)"]
 
 [[package]]
+name = "schedulefree"
+version = "1.4"
+description = "Schedule Free Learning in PyTorch"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "schedulefree-1.4.tar.gz", hash = "sha256:59b7ec9ac0f714730cbcdde435b7d9b415d3fc3c5d2133e0f124e07aba4ba86a"},
+]
+
+[[package]]
 name = "scikit-learn"
 version = "1.5.1"
 description = "A set of python modules for machine learning and data mining"
@@ -3291,4 +3301,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8838279d7b1306bee20833f7cb589ef43fcf8fe988d701678932134a00328ba9"
+content-hash = "770dcc3d53b3778290d22e98ffcd893db89a37d0d92f33966dc86cf7150cdd8e"
