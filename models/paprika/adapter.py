@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from trainer.paprika import PaprikaConfig
+from configs.paprika import PaprikaConfig
 
 from torch import Tensor
 

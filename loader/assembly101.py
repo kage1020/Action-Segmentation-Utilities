@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 
-from base.main import Config
+from configs.base import Config
 from .main import BaseDataset, BaseDataLoader
 
 

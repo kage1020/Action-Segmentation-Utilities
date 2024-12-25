@@ -11,7 +11,7 @@ You can use this module with [Hydra](https://hydra.cc/) to manage your experimen
 
 ```python
 from manager.hydra import HydraManager
-from base.main import Config
+from configs.base import Config
 
 
 @HydraManager(config_path="config.yaml")

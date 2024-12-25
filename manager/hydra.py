@@ -1,6 +1,7 @@
 import hydra
 
-from base.main import Config, Base
+from base.main import Base
+from configs.base import Config
 
 
 # FIXME: This class can't use in other files

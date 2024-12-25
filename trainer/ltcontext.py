@@ -1,4 +1,3 @@
-from dataclasses import asdict, dataclass
 from einops import rearrange
 from tqdm import tqdm
 import torch
@@ -9,55 +8,14 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from schedulefree import RAdamScheduleFree
 
-from base.main import Config, Base
+from base.main import Base
 from trainer.main import Trainer
 from evaluator.main import Evaluator
 from visualizer.main import Visualizer
 from loader.main import BaseDataLoader
+from configs.ltcontext import LTContextConfig
 
 from torch import Tensor
-
-
-@dataclass
-class LTCConfig:
-    num_stages: int
-    num_layers: int
-    model_dim: int
-    dim_reduction: int
-    dropout_prob: float
-    conv_dilation_factor: int
-    windowed_attn_w: int
-    long_term_attn_g: int
-    use_instance_norm: bool
-    channel_masking_prob: float
-
-
-@dataclass
-class AttentionConfig:
-    num_attn_heads: int
-    dropout: float
-
-
-@dataclass
-class SolverConfig:
-    t_max: int
-    eta_min: int
-    milestone: int
-
-
-@dataclass
-class LTContextConfig(Config):
-    mse_clip_val: float
-    mse_weight: float
-    LTC: LTCConfig
-    ATTENTION: AttentionConfig
-    SOLVER: SolverConfig
-
-    def __post__init__(self):
-        super().__post_init__()
-        self.LTC = LTCConfig(**asdict(self.LTC))
-        self.ATTENTION = AttentionConfig(**asdict(self.ATTENTION))
-        self.SOLVER = SolverConfig(**asdict(self.SOLVER))
 
 
 class LTContextCriterion(Module):

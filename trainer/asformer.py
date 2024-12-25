@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Literal
 from einops import rearrange
 from tqdm import tqdm
@@ -10,29 +9,12 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
-from base.main import Config
 from loader.main import BaseDataLoader
 from visualizer.main import Visualizer
 from visualizer.palette import template
 from evaluator.main import Evaluator
+from configs.asformer import ASFormerConfig
 from .main import Trainer
-
-
-@dataclass
-class ASFormerConfig(Config):
-    num_decoders: int
-    num_layers: int
-    r1: int
-    r2: int
-    num_f_maps: int
-    channel_masking_rate: float
-    att_type: str
-    alpha: float
-    p: float
-    scheduler_mode: Literal["min", "max"]
-    scheduler_factor: float
-    scheduler_patience: int
-    mse_weight: float
 
 
 class ASFormerCriterion(Module):

@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 
 from base.main import Base
-from trainer.paprika import PaprikaConfig, PaprikaPseudoConfig, PaprikaDownstreamConfig
+from configs.paprika import PaprikaConfig, PaprikaPseudoConfig, PaprikaDownstreamConfig
 
 
 class Builder(Base):
