@@ -4,78 +4,89 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import LambdaLR
 from dataclasses import dataclass
 from tqdm import tqdm
-from base import Config
+from omegaconf import DictConfig
 
-from loader import BaseDataLoader
-from trainer import Trainer, NoopLoss
+from base.main import Config
+from loader.main import BaseDataLoader
+from trainer.main import Trainer, NoopLoss, NoopScheduler
+from models.paprika.builder import Builder
 
 from torch import Tensor
 
 
 @dataclass
-class PaprikaConfig(Config):
-    document_dir: str
-    document_num_tasks: int
-    dataset_num_tasks: int
+class DocumentConfig(DictConfig):
+    name: str
+    num_tasks: int
 
-    num_nodes: int
+
+@dataclass
+class PaprikaConfig(Config):
+    document: DocumentConfig
+    adapter_objective: str
+
+    # distributed training parameters
+    partition_dataset: bool
+    num_partitions: int
+
+    # dataset parameters
+    num_nodes: int  # number of classes in video dataset
+    num_tasks: int
+
+    # model parameters
+    bottleneck_dim: int
+    pretrain_khop: int
 
 
 @dataclass
 class PaprikaPseudoConfig(PaprikaConfig):
-    # remove_step_duplicates: bool
-    # step_clustering_linkage: str
-    # step_clustering_distance_thresh: float
-    # step_clustering_affinity: str
-    # edge_min_aggconf: int
-    pass
+    remove_step_duplicates: bool
+    video_meta_csv_path: str
+    task_id_to_task_name_csv_path: str
+
+    # step clustering parameters
+    step_clustering_linkage: str
+    step_clustering_distance_threshold: float
+    step_clustering_affinity: str
+    edge_min_aggconf: float
+
+    # segment matching parameters
+    graph_find_matched_steps_criteria: str
+    graph_find_matched_steps_for_segments_threshold: float
+    graph_find_matched_steps_for_segments_topK: int
+
+    # VNM parameters
+    label_find_matched_nodes_criteria: str
+    label_find_matched_nodes_for_segments_threshold: float
+    label_find_matched_nodes_for_segments_topK: int
+
+    # VTM parameters
+    label_find_tasks_criteria: str
+    label_find_tasks_threshold: float
+    label_find_tasks_topK: int
+
+    # TCL parameters
+    label_find_tasknodes_criteria: str
+    label_find_tasknodes_threshold: float
+    label_find_tasknodes_topK: int
+    label_num_dataset_tasks_to_consider: int
+
+    # NRL parameters
+    label_khop: int
+    label_find_neighbors_criteria: str
+    label_find_neighbors_threshold: float
+    label_find_neighbors_topK: int
 
 
 @dataclass
-class PaprikaPretrainConfig(PaprikaConfig):
-    # label_find_matched_nodes_criteria: str
-    # label_find_matched_nodes_for_segments_thresh: float
-    # label_find_matched_nodes_for_segments_topK: int
-    # label_find_tasks_criteria: str
-    # label_find_tasks_thresh: float
-    # label_find_tasks_topK: int
-    # label_find_tasknodes_criteria: str
-    # label_find_tasknodes_thresh: float
-    # label_find_tasknodes_topK: int
-    # label_find_neighbors_criteria: str
-    # label_find_neighbors_thresh: float
-    # label_find_neighbors_topK: int
-    # label_khop: int
-
-    adapter_objective: str
-    pretrain_khop: int
-    adapter_learning_rate: float
-    adapter_weight_decay: float
-    num_warmup_steps: int
-    num_training_steps: int
-    num_cycles: int
-
-    s3d_hidden_dim: int
-    bottleneck_dim: int
-    adapter_refined_feat_dim: int
-    adapter_num_classes: int | None
-    # video_meta_csv_path: str
-    # task_id_to_task_name_csv_path: str
-    # num_partitions: int
-    segment_step_sim_scores_ready: bool
-    segment_step_sim_scores_DS_ready: bool
-    nodes_formed: bool
-    edges_formed: bool
-    pseudo_label_VNM_ready: bool
-    pseudo_label_VTM_ready: bool
-    pseudo_label_TCL_ready: bool
-    pseudo_label_NRL_ready: bool
-    pseudo_label_DS_ready: bool
-    partition_dataset: bool
+class PaprikaDownstreamConfig(PaprikaConfig):
+    label_find_matched_steps_criteria: str
+    label_find_matched_steps_for_segments_threshold: float
+    label_find_matched_steps_for_segments_topK: int
 
 
 class PaprikaCriterion(Module):
-    def __init__(self, cfg: PaprikaPretrainConfig):
+    def __init__(self, cfg: PaprikaConfig):
         self.cfg = cfg
         self.vnm = (
             BCEWithLogitsLoss(reduction="mean").to(cfg.device)
@@ -88,9 +99,9 @@ class PaprikaCriterion(Module):
             else NoopLoss().to(cfg.device)
             for _ in range(2)
         ]
-        self.tcn = [
+        self.tcl = [
             BCEWithLogitsLoss(reduction="mean").to(cfg.device)
-            if "TCN" in cfg.adapter_objective
+            if "TCL" in cfg.adapter_objective
             else NoopLoss().to(cfg.device)
             for _ in range(2)
         ]
@@ -105,62 +116,96 @@ class PaprikaCriterion(Module):
         self.vnm.train()
         for i in range(2):
             self.vtm[i].train()
-            self.tcn[i].train()
+            self.tcl[i].train()
         for i in range(2 * self.cfg.pretrain_khop):
             self.nrl[i].train()
 
     def forward(
-        self, VNM: Tensor, VTM: list[Tensor], TCN: list[Tensor], NRL: list[Tensor]
+        self,
+        gt: tuple[Tensor, list[Tensor], list[Tensor], list[Tensor]],
+        pred: tuple[Tensor, list[Tensor], list[Tensor], list[Tensor]],
     ) -> Tensor:
-        vnm_loss = self.vnm(VNM)
-        vtm_loss = sum([vtm_loss(VTM[i]) for i, vtm_loss in enumerate(self.vtm)])
-        tcn_loss = sum([tcn_loss(TCN[i]) for i, tcn_loss in enumerate(self.tcn)])
-        nrl_loss = sum([nrl_loss(NRL[i]) for i, nrl_loss in enumerate(self.nrl)])
-        return vnm_loss + vtm_loss + tcn_loss + nrl_loss
+        gt_VNM, gt_VTM, gt_TCL, gt_NRL = gt
+        pred_VNM, pred_VTM, pred_TCL, pred_NRL = pred
+        vnm_loss = self.vnm(gt_VNM, pred_VNM)
+        vtm_loss = sum(
+            [criterion(gt_VTM[i], pred_VTM[i]) for i, criterion in enumerate(self.vtm)]
+        )
+        tcn_loss = sum(
+            [criterion(gt_TCL[i], pred_TCL[i]) for i, criterion in enumerate(self.tcl)]
+        )
+        nrl_loss = sum(
+            [criterion(gt_NRL[i], pred_NRL[i]) for i, criterion in enumerate(self.nrl)]
+        )
+        return vnm_loss + vtm_loss + tcn_loss + nrl_loss, {
+            "VNM": vnm_loss,
+            "VTM": vtm_loss,
+            "TCN": tcn_loss,
+            "NRL": nrl_loss,
+        }
 
 
 class PaprikaOptimizer(Adam):
-    def __init__(self, cfg: PaprikaPretrainConfig, model: Module):
+    def __init__(self, cfg: PaprikaConfig, model: Module):
         params = filter(lambda p: p.requires_grad, model.parameters())
-        super().__init__(
-            params, lr=cfg.adapter_learning_rate, weight_decay=cfg.adapter_weight_decay
-        )
+        super().__init__(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
 
 
-class PaprikaScheduler(LambdaLR):
+class PaprikaScheduler:
     def __init__(
         self,
         optimizer: PaprikaOptimizer,
-        cfg: PaprikaPretrainConfig,
+        cfg: PaprikaConfig,
         last_epoch: int = -1,
+        training_steps: int = None,
+        cycles: float = 0.5,
     ):
-        def lr_lambda(epoch: int) -> float:
-            if epoch < cfg.num_warmup_steps:
-                return float(epoch / max(1, cfg.num_warmup_steps))
+        if cfg.warmup_steps is None:
+            self.scheduler = NoopScheduler(optimizer, last_epoch)
+            return
 
-            progress = float(epoch - cfg.num_warmup_steps) / float(
-                max(1, cfg.num_training_steps - cfg.num_warmup_steps)
+        def lr_lambda(epoch: int) -> float:
+            if cfg.warmup_steps is None:
+                return cfg.lr
+
+            assert training_steps is not None
+            if epoch < cfg.warmup_steps:
+                return float(epoch / max(1, cfg.warmup_steps))
+            progress = float(epoch - cfg.warmup_steps) / float(
+                max(1, training_steps - cfg.warmup_steps)
             )
             return max(
                 0.0,
-                0.5
-                * (1.0 + math.cos(math.pi * float(cfg.num_cycles) * 2.0 * progress)),
+                0.5 * (1.0 + math.cos(math.pi * float(cycles) * 2.0 * progress)),
             )
 
-        super().__init__(optimizer, lr_lambda, last_epoch=last_epoch)
+        self.scheduler = LambdaLR(optimizer, lr_lambda, last_epoch=last_epoch)
+
+    def step(self):
+        self.scheduler.step()
 
 
 class PaprikaTrainer(Trainer):
-    def __init__(self, cfg: PaprikaPretrainConfig | PaprikaPseudoConfig, model: Module):
+    def __init__(self, cfg: PaprikaPseudoConfig, model: Module):
         super().__init__(cfg, model, name="PaprikaTrainer")
         self.cfg = cfg
         self.criterion = PaprikaCriterion(cfg)
         self.optimizer = PaprikaOptimizer(cfg, model)
+        self.builder = Builder(cfg)
 
     def make_pseudo_label(self):
-        from models.paprika.build_knowledge import obtain_external_knowledge
+        self.builder.get_sim_scores()
+        self.builder.get_nodes()
+        self.builder.get_edges()
 
-        obtain_external_knowledge(self.cfg)
+        if "VNM" in self.cfg.adapter_objective:
+            self.builder.get_pseudo_label_VNM()
+        if "VTM" in self.cfg.adapter_objective:
+            self.builder.get_pseudo_label_VTM()
+        if "TCL" in self.cfg.adapter_objective:
+            self.builder.get_pseudo_label_TCL()
+        if "NRL" in self.cfg.adapter_objective:
+            self.builder.get_pseudo_label_NRL()
 
     def train(self, loader: BaseDataLoader):
         self.model.to(self.device)
@@ -185,7 +230,10 @@ class PaprikaTrainer(Trainer):
                 self.optimizer.zero_grad()
 
                 VNM_answer, VTM_answer, TCL_answer, NRL_answer = self.model(features)
-                loss = self.criterion(VNM_answer, VTM_answer, TCL_answer, NRL_answer)
+                loss, dict_loss = self.criterion(
+                    (pseudo_VNM, pseudo_VTM, pseudo_TCL, pseudo_NRL),
+                    (VNM_answer, VTM_answer, TCL_answer, NRL_answer),
+                )
                 epoch_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()

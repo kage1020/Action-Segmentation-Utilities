@@ -1,20 +1,19 @@
 import torch.nn as nn
 
-from trainer import PaprikaPretrainConfig
+from trainer.paprika import PaprikaConfig
 
 from torch import Tensor
 
 
 class Adapter(nn.Module):
-    def __init__(self, cfg: PaprikaPretrainConfig):
+    def __init__(self, cfg: PaprikaConfig):
         super().__init__()
         self.cfg = cfg
-        assert cfg.adapter_refined_feat_dim == cfg.s3d_hidden_dim
 
         self.adapter = nn.Sequential(
-            nn.Linear(cfg.s3d_hidden_dim, cfg.bottleneck_dim),
+            nn.Linear(cfg.dataset.input_dim, cfg.bottleneck_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(cfg.bottleneck_dim, cfg.adapter_refined_feat_dim),
+            nn.Linear(cfg.bottleneck_dim, cfg.dataset.input_dim),
         )
 
         # Procedural Knowledge Graph
@@ -23,7 +22,7 @@ class Adapter(nn.Module):
             if "VNM" in cfg.adapter_objective:
                 output_dim = cfg.num_nodes
                 self.answer_head_VNM = nn.Sequential(
-                    nn.Linear(cfg.adapter_refined_feat_dim, output_dim // 4),
+                    nn.Linear(cfg.dataset.input_dim, output_dim // 4),
                     nn.ReLU(inplace=True),
                     nn.Linear(output_dim // 4, output_dim // 2),
                     nn.ReLU(inplace=True),
@@ -36,22 +35,18 @@ class Adapter(nn.Module):
                     [
                         nn.Sequential(
                             nn.Linear(
-                                cfg.adapter_refined_feat_dim,
-                                cfg.document_num_tasks // 2,
+                                cfg.dataset.input_dim,
+                                cfg.document.num_tasks // 2,
                             ),
                             nn.ReLU(inplace=True),
                             nn.Linear(
-                                cfg.document_num_tasks // 2, cfg.document_num_tasks
+                                cfg.document.num_tasks // 2, cfg.document.num_tasks
                             ),
                         ),
                         nn.Sequential(
-                            nn.Linear(
-                                cfg.adapter_refined_feat_dim, cfg.dataset_num_tasks // 2
-                            ),
+                            nn.Linear(cfg.dataset.input_dim, cfg.num_tasks // 2),
                             nn.ReLU(inplace=True),
-                            nn.Linear(
-                                cfg.dataset_num_tasks // 2, cfg.dataset_num_tasks
-                            ),
+                            nn.Linear(cfg.num_tasks // 2, cfg.num_tasks),
                         ),
                     ]
                 )
@@ -62,14 +57,14 @@ class Adapter(nn.Module):
                 self.answer_head_TCL = nn.ModuleList(
                     [
                         nn.Sequential(
-                            nn.Linear(cfg.adapter_refined_feat_dim, output_dim // 4),
+                            nn.Linear(cfg.dataset.input_dim, output_dim // 4),
                             nn.ReLU(inplace=True),
                             nn.Linear(output_dim // 4, output_dim // 2),
                             nn.ReLU(inplace=True),
                             nn.Linear(output_dim // 2, output_dim),
                         ),
                         nn.Sequential(
-                            nn.Linear(cfg.adapter_refined_feat_dim, output_dim // 4),
+                            nn.Linear(cfg.dataset.input_dim, output_dim // 4),
                             nn.ReLU(inplace=True),
                             nn.Linear(output_dim // 4, output_dim // 2),
                             nn.ReLU(inplace=True),
@@ -84,7 +79,7 @@ class Adapter(nn.Module):
                 self.answer_head_NRL = nn.ModuleList(
                     [
                         nn.Sequential(
-                            nn.Linear(cfg.adapter_refined_feat_dim, output_dim // 4),
+                            nn.Linear(cfg.dataset.input_dim, output_dim // 4),
                             nn.ReLU(inplace=True),
                             nn.Linear(output_dim // 4, output_dim // 2),
                             nn.ReLU(inplace=True),
@@ -96,18 +91,20 @@ class Adapter(nn.Module):
 
         # Downstream Task
         else:
-            assert cfg.adapter_num_classes is not None
+            output_dim = cfg.dataset.num_classes
             self.answer_head = nn.Sequential(
-                nn.Linear(cfg.adapter_refined_feat_dim, cfg.adapter_num_classes // 6),
+                nn.Linear(cfg.dataset.input_dim, output_dim // 6),
                 nn.ReLU(inplace=True),
-                nn.Linear(cfg.adapter_num_classes // 6, cfg.adapter_num_classes // 4),
+                nn.Linear(output_dim // 6, output_dim // 4),
                 nn.ReLU(inplace=True),
-                nn.Linear(cfg.adapter_num_classes // 4, cfg.adapter_num_classes // 2),
+                nn.Linear(output_dim // 4, output_dim // 2),
                 nn.ReLU(inplace=True),
-                nn.Linear(cfg.adapter_num_classes // 2, cfg.adapter_num_classes),
+                nn.Linear(output_dim // 2, output_dim),
             )
 
-    def forward(self, features: Tensor, prediction: bool = False):
+    def forward(
+        self, features: Tensor, prediction: bool = False
+    ) -> Tensor | tuple[Tensor, list[Tensor], list[Tensor], list[Tensor]]:
         """
         features: (B, 512)
         """
@@ -117,11 +114,18 @@ class Adapter(nn.Module):
             return refined_features
 
         if "PKG" in self.cfg.adapter_objective:
-            if self.cfg.adapter_objective == "PKG_VNM_VTM_TCL_NRL":
+            VNM_answer = nn.Identity()
+            VTM_answer = [nn.Identity() for _ in range(2)]
+            TCL_answer = [nn.Identity() for _ in range(2)]
+            NRL_answer = [nn.Identity() for _ in range(2 * self.cfg.pretrain_khop)]
+            if "VNM" in self.cfg.adapter_objective:
                 VNM_answer = self.answer_head_VNM(refined_features)
+            if "VTM" in self.cfg.adapter_objective:
                 VTM_answer = [head(refined_features) for head in self.answer_head_VTM]
+            if "TCL" in self.cfg.adapter_objective:
                 TCL_answer = [head(refined_features) for head in self.answer_head_TCL]
+            if "NRL" in self.cfg.adapter_objective:
                 NRL_answer = [head(refined_features) for head in self.answer_head_NRL]
-                return VNM_answer, VTM_answer, TCL_answer, NRL_answer
-            else:
-                return self.answer_head(refined_features)
+            return VNM_answer, VTM_answer, TCL_answer, NRL_answer
+        else:
+            return self.answer_head(refined_features)
