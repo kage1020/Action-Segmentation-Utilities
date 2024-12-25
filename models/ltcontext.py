@@ -6,8 +6,6 @@ from torch.nn.init import constant_
 import torch.nn.functional as F
 from einops import rearrange
 
-from trainer.ltcontext import LTContextConfig
-
 from torch import Tensor
 
 
@@ -685,51 +683,67 @@ class LTCModule(nn.Module):
 
 
 class LTC(nn.Module):
-    def __init__(self, cfg: LTContextConfig):
+    def __init__(
+        self,
+        num_layers: int,
+        num_classes: int,
+        num_heads: int,
+        input_dim: int,
+        model_dim: int,
+        dilation_factor: int,
+        windowed_attn_w: int,
+        long_term_attn_g: int,
+        use_instance_norm: bool,
+        dropout_prob: float,
+        channel_dropout_prob: float,
+        dim_reduction: int,
+        num_stages: int,
+        attention_dropout_prob: float,
+    ):
         super().__init__()
         self.stage1 = LTCModule(
-            num_layers=cfg.LTC.num_layers,
-            num_classes=cfg.dataset.num_classes,
-            num_heads=cfg.ATTENTION.num_attn_heads,
-            input_dim=cfg.dataset.input_dim,
-            model_dim=cfg.LTC.model_dim,
-            dilation_factor=cfg.LTC.conv_dilation_factor,
-            windowed_attn_w=cfg.LTC.windowed_attn_w,
-            long_term_attn_g=cfg.LTC.long_term_attn_g,
+            num_layers=num_layers,
+            num_classes=num_classes,
+            num_heads=num_heads,
+            input_dim=input_dim,
+            model_dim=model_dim,
+            dilation_factor=dilation_factor,
+            windowed_attn_w=windowed_attn_w,
+            long_term_attn_g=long_term_attn_g,
             bias=True,
-            use_instance_norm=cfg.LTC.use_instance_norm,
+            use_instance_norm=use_instance_norm,
             use_separate_proj_weight=True,
             requires_input_projection=True,
-            dropout_prob=cfg.LTC.dropout_prob,
-            channel_dropout_prob=cfg.LTC.channel_masking_prob,
-            attention_dropout_prob=cfg.ATTENTION.dropout,
+            dropout_prob=dropout_prob,
+            channel_dropout_prob=channel_dropout_prob,
+            attention_dropout_prob=attention_dropout_prob,
         )
         self.dim_reduction = nn.Conv1d(
-            in_channels=int(cfg.LTC.model_dim),
-            out_channels=int(cfg.LTC.model_dim // cfg.LTC.dim_reduction),
+            in_channels=model_dim,
+            out_channels=model_dim // dim_reduction,
             kernel_size=1,
             bias=True,
         )
         self.stages = nn.ModuleList(
             [
                 LTCModule(
-                    num_layers=cfg.LTC.num_layers,
-                    num_classes=cfg.dataset.num_classes,
-                    num_heads=cfg.ATTENTION.num_attn_heads,
-                    input_dim=cfg.dataset.num_classes,
-                    model_dim=int(cfg.LTC.model_dim // cfg.LTC.dim_reduction),
-                    dilation_factor=cfg.LTC.conv_dilation_factor,
-                    windowed_attn_w=cfg.LTC.windowed_attn_w,
-                    long_term_attn_g=cfg.LTC.long_term_attn_g,
+                    num_layers=num_layers,
+                    num_classes=num_classes,
+                    num_heads=num_heads,
+                    input_dim=input_dim,
+                    model_dim=model_dim // dim_reduction,
+                    dilation_factor=dilation_factor,
+                    windowed_attn_w=windowed_attn_w,
+                    long_term_attn_g=long_term_attn_g,
                     bias=True,
                     use_separate_proj_weight=True,
                     requires_input_projection=True,
-                    use_instance_norm=cfg.LTC.use_instance_norm,
-                    dropout_prob=cfg.LTC.dropout_prob,
-                    channel_dropout_prob=cfg.LTC.channel_masking_prob,
-                    attention_dropout_prob=cfg.ATTENTION.dropout,
+                    use_instance_norm=use_instance_norm,
+                    dropout_prob=dropout_prob,
+                    channel_dropout_prob=channel_dropout_prob,
+                    attention_dropout_prob=attention_dropout_prob,
                 )
-                for _ in range(cfg.LTC.num_stages)
+                for _ in range(num_stages)
             ]
         )
 
