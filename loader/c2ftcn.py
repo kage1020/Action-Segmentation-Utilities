@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from asu.base import Config
+from asu.base.main import Config
 from .main import BaseDataset
 
 

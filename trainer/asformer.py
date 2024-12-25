@@ -10,10 +10,11 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
-from base import Config
-from loader import BaseDataLoader
-from visualizer import Visualizer, template
-from evaluator import Evaluator
+from base.main import Config
+from loader.main import BaseDataLoader
+from visualizer.main import Visualizer
+from visualizer.palette import template
+from evaluator.main import Evaluator
 from .main import Trainer
 
 

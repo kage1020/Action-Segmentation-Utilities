@@ -1,14 +1,12 @@
 from pathlib import Path
 import threading
-from concurrent.futures import ThreadPoolExecutor
 import cv2
 import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
-from base import Base
-from .main import NoopDataset
+from base.main import Base
 
 
 worker_info = threading.local()

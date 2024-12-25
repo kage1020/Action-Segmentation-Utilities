@@ -7,12 +7,13 @@ from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
+from schedulefree import RAdamScheduleFree
 
-from base import Config, Base
-from trainer import Trainer
-from evaluator import Evaluator
-from visualizer import Visualizer
-from loader import BaseDataLoader
+from base.main import Config, Base
+from trainer.main import Trainer
+from evaluator.main import Evaluator
+from visualizer.main import Visualizer
+from loader.main import BaseDataLoader
 
 from torch import Tensor
 
@@ -105,6 +106,21 @@ class LTContextOptimizer(Adam):
         super().__init__(params, lr=lr, betas=betas, weight_decay=weight_decay)
 
 
+class LTContextScheduleFreeOptimizer(RAdamScheduleFree):
+    def __init__(
+        self,
+        model: Module,
+        lr: float,
+        betas: tuple[float, float],
+    ):
+        params = filter(lambda p: p.requires_grad, model.parameters())
+        super().__init__(
+            params,
+            lr=lr,
+            betas=betas,
+        )
+
+
 class LTContextScheduler(SequentialLR):
     def __init__(
         self, optimizer: LTContextOptimizer, T_max: int, eta_min: int, milestone: int
@@ -138,12 +154,13 @@ class LTContextTrainer(Trainer):
             cfg.mse_clip_val,
             cfg.mse_weight,
         )
-        self.optimizer = LTContextOptimizer(
-            model, cfg.lr, (0.9, 0.999), cfg.weight_decay
-        )
-        self.scheduler = LTContextScheduler(
-            self.optimizer, cfg.SOLVER.t_max, cfg.SOLVER.eta_min, cfg.SOLVER.milestone
-        )
+        # self.optimizer = LTContextOptimizer(
+        #     model, cfg.lr, (0.9, 0.999), cfg.weight_decay
+        # )
+        self.optimizer = LTContextScheduleFreeOptimizer(model, cfg.lr, (0.9, 0.999))
+        # self.scheduler = LTContextScheduler(
+        #     self.optimizer, cfg.SOLVER.t_max, cfg.SOLVER.eta_min, cfg.SOLVER.milestone
+        # )
         self.train_evaluator = Evaluator(cfg)
         self.test_evaluator = Evaluator(cfg)
         self.visualizer = Visualizer()
@@ -153,6 +170,7 @@ class LTContextTrainer(Trainer):
 
         for epoch in range(self.cfg.epochs):
             self.model.train()
+            self.optimizer.train()
             epoch_loss: float = 0
 
             for features, masks, targets, video_names in tqdm(
@@ -211,7 +229,7 @@ class LTContextTrainer(Trainer):
                     f"{self.hydra_dir}/{self.cfg.result_dir}/best_split{self.cfg.dataset.split}.model",
                 )
             self.train_evaluator.reset()
-            self.scheduler.step()
+            # self.scheduler.step()
 
             if not self.cfg.val_skip:
                 self.test(test_loader)
@@ -221,6 +239,7 @@ class LTContextTrainer(Trainer):
     def test(self, test_loader: BaseDataLoader):
         self.model.to(self.device)
         self.model.eval()
+        self.optimizer.eval()
         epoch_loss = 0
 
         with torch.no_grad():

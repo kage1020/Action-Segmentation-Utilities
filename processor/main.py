@@ -4,7 +4,7 @@ from tqdm import tqdm
 from sklearn.model_selection import KFold
 import numpy as np
 
-from base import Base, Config
+from base.main import Base, Config
 
 
 class Processor(Base):

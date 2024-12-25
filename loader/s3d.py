@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 
-from base import Base
+from base.main import Base
 
 
 class ImageBatch(Dataset):

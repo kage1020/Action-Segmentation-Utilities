@@ -1,14 +1,26 @@
 import os
 import torch
 from torch.nn import Module
+from torch.optim.lr_scheduler import _LRScheduler
 from hydra.core.hydra_config import HydraConfig
 
-from asu.base import Base, Config
+from asu.base.main import Base, Config
 
 
 class NoopLoss(Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.zeros(1, device=x.device)
+
+
+class NoopScheduler(_LRScheduler):
+    def __init__(self, optimizer, last_epoch=-1):
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        return [group["lr"] for group in self.optimizer.param_groups]
+
+    def step(self, epoch=None):
+        pass
 
 
 class Trainer(Base):

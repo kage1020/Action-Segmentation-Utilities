@@ -1,7 +1,7 @@
 from typing import Literal
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from asu.base import Base, Config
+from asu.base.main import Base, Config
 
 from numpy import ndarray
 from torch import Tensor

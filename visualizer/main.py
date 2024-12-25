@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.metrics import roc_curve, RocCurveDisplay
 
-from base import Base
-from visualizer.palette import template
-from visualizer.writer import VideoWriter
-from visualizer.reader import VideoReader
+from base.main import Base
+from .palette import template
+from .writer import VideoWriter
+from .reader import VideoReader
 
 from torch import Tensor
 from numpy import ndarray

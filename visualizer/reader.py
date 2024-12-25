@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from base import Base
+from base.main import Base
 
 
 class VideoReader:

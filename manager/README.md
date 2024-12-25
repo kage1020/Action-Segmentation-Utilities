@@ -10,8 +10,8 @@ This module provides the experiment management tools for action segmentation.
 You can use this module with [Hydra](https://hydra.cc/) to manage your experiments using configuration files. To use this module, you need to add decorator to your function.
 
 ```python
-from manager import HydraManager
-from base import Config
+from manager.hydra import HydraManager
+from base.main import Config
 
 
 @HydraManager(config_path="config.yaml")
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 You can use this module with [MLflow](https://mlflow.org/) to manage your model parameters and metrics.
 
 ```python
-from manager import MLflowManager
+from manager.mlflow import MLflowManager
 
 mlflow = MLflowManager()
 mlflow.set(tracking_url="http://localhost:5000", experiment_name="default")

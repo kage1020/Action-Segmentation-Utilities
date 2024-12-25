@@ -6,7 +6,7 @@ from torch.nn.init import constant_
 import torch.nn.functional as F
 from einops import rearrange
 
-from trainer import LTContextConfig
+from trainer.ltcontext import LTContextConfig
 
 from torch import Tensor
 

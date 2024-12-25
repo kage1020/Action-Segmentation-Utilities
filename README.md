@@ -54,10 +54,10 @@ You can use this repository with [Hydra](https://hydra.cc/) to manage your confi
 ```python
 # main.py
 import hydra
-from base import Base, Config
-from loader import BreakfastDataLoader
-from models import ASFormer
-from trainer import ASFormerTrainer
+from base.main import Base, Config
+from loader.breakfast import BreakfastDataLoader
+from models.asformer import ASFormer
+from trainer.asformer import ASFormerTrainer
 
 
 @hydra.main(config_path=None, config_name=None, version_base=None)
@@ -91,10 +91,10 @@ if __name__ == "__main__":
 If you use this repository as a submodule, add `asu` to the module path like below:
 
 ```python
-from asu.base import Base, Config
-from asu.loader import BreakfastDataLoader
-from asu.models import ASFormer
-from asu.trainer import ASFormerTrainer
+from asu.base.main import Base, Config
+from asu.loader.breakfast import BreakfastDataLoader
+from asu.models.asformer import ASFormer
+from asu.trainer.asformer import ASFormerTrainer
 ```
 
 Run the following command to execute the code:

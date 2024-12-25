@@ -10,7 +10,7 @@ import torch
 from torch.nn import Module
 from omegaconf import DictConfig
 
-from logger import Logger
+from logger.main import Logger
 
 from numpy import ndarray
 from torch import Tensor
@@ -64,6 +64,7 @@ class Config(DictConfig):
     epochs: int
     lr: float
     weight_decay: float
+    warmup_steps: int | None
     use_pseudo: bool
     refine_pseudo: bool
 

@@ -6,8 +6,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from base import Base
-from loader import I3DDataLoader, S3DDataLoader
+from base.main import Base
+from loader.i3d import I3DDataLoader
+from loader.s3d import S3DDataLoader
 
 # TODO: support for trimmed video
 
