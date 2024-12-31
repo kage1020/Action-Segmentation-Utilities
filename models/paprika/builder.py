@@ -28,10 +28,12 @@ class Builder(Base):
         else:
             videos = []
             video_features_path = (
-                Path(self.cfg.dataset.base_dir) / self.cfg.dataset.name / "features"
+                Path(self.cfg.dataset.base_dir) / self.cfg.dataset.name / self.cfg.dataset.feature_dir
             )
             video_features = list(video_features_path.glob("*"))
-            for f in tqdm(video_features):
+            assert len(video_features) > 0, "No video features found!"
+
+            for f in tqdm(video_features, desc="Loading videos", leave=False):
                 videos.append(Path(f).stem)
             np.save(video_ids, videos)
 
@@ -129,12 +131,12 @@ class Builder(Base):
         frame_lookup_table = []
 
         videos_missing_features = set()
-        for v in tqdm(videos):
+        for v in tqdm(videos, desc="Loading video features", leave=False):
             try:
                 video_s3d: np.ndarray = np.load(
                     Path(self.cfg.dataset.base_dir)
                     / self.cfg.dataset.name
-                    / "features"
+                    / self.cfg.dataset.feature_dir
                     / f"{v}.npy"
                 )
                 # video_s3d shape: (num_clips, num_subclips, 512)

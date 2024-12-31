@@ -20,7 +20,7 @@ class Adapter(nn.Module):
         if "PKG" in cfg.adapter_objective:
             # Video Node Matching
             if "VNM" in cfg.adapter_objective:
-                output_dim = cfg.num_nodes
+                output_dim = cfg.dataset.num_nodes
                 self.answer_head_VNM = nn.Sequential(
                     nn.Linear(cfg.dataset.input_dim, output_dim // 4),
                     nn.ReLU(inplace=True),
@@ -44,16 +44,16 @@ class Adapter(nn.Module):
                             ),
                         ),
                         nn.Sequential(
-                            nn.Linear(cfg.dataset.input_dim, cfg.num_tasks // 2),
+                            nn.Linear(cfg.dataset.input_dim, cfg.dataset.num_tasks // 2),
                             nn.ReLU(inplace=True),
-                            nn.Linear(cfg.num_tasks // 2, cfg.num_tasks),
+                            nn.Linear(cfg.dataset.num_tasks // 2, cfg.dataset.num_tasks),
                         ),
                     ]
                 )
 
             # Task Context Learning
             if "TCL" in cfg.adapter_objective:
-                output_dim = cfg.num_nodes
+                output_dim = cfg.dataset.num_nodes
                 self.answer_head_TCL = nn.ModuleList(
                     [
                         nn.Sequential(
@@ -75,7 +75,7 @@ class Adapter(nn.Module):
 
             # Node Relation Learning
             if "NRL" in cfg.adapter_objective:
-                output_dim = cfg.num_nodes
+                output_dim = cfg.dataset.num_nodes
                 self.answer_head_NRL = nn.ModuleList(
                     [
                         nn.Sequential(

@@ -720,7 +720,7 @@ class LTC(nn.Module):
         )
         self.dim_reduction = nn.Conv1d(
             in_channels=model_dim,
-            out_channels=model_dim // dim_reduction,
+            out_channels=model_dim // int(dim_reduction),
             kernel_size=1,
             bias=True,
         )
@@ -730,8 +730,8 @@ class LTC(nn.Module):
                     num_layers=num_layers,
                     num_classes=num_classes,
                     num_heads=num_heads,
-                    input_dim=input_dim,
-                    model_dim=model_dim // dim_reduction,
+                    input_dim=num_classes,
+                    model_dim=model_dim // int(dim_reduction),
                     dilation_factor=dilation_factor,
                     windowed_attn_w=windowed_attn_w,
                     long_term_attn_g=long_term_attn_g,

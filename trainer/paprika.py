@@ -14,6 +14,7 @@ from torch import Tensor
 
 class PaprikaCriterion(Module):
     def __init__(self, cfg: PaprikaConfig):
+        super().__init__()
         self.cfg = cfg
         self.vnm = (
             BCEWithLogitsLoss(reduction="mean").to(cfg.device)
