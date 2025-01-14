@@ -468,3 +468,24 @@ class Base:
         if len(backgrounds) == 0:
             return x
         return np.array([t if t not in backgrounds else backgrounds[0] for t in x])
+
+    @staticmethod
+    def get_anomalies(anomaly_dir: Path) -> dict[str, list[str]]:
+        """
+        Get the anomalies of the videos
+
+        Anomaly file format should be:
+        normality
+        normality
+        anomaly
+        ...
+        """
+        anomaly_files = list(anomaly_dir.glob("*.txt"))
+        anomaly_files.sort()
+        anomalies = {}
+
+        for anomaly_file in anomaly_files:
+            with open(anomaly_file, "r") as f:
+                lines = f.readlines()
+            anomalies[anomaly_file.stem] = [line.strip() for line in lines]
+        return anomalies
