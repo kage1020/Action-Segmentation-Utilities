@@ -1,5 +1,6 @@
 import sys
 
+
 def trace_module(frame, event, arg):
     code = frame.f_code
     module_name = code.co_filename
@@ -11,5 +12,6 @@ def trace_module(frame, event, arg):
     ):
         print(f"Module executed: {module_name}")
     return trace_module
+
 
 sys.settrace(trace_module)

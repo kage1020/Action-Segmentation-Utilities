@@ -44,9 +44,13 @@ class Adapter(nn.Module):
                             ),
                         ),
                         nn.Sequential(
-                            nn.Linear(cfg.dataset.input_dim, cfg.dataset.num_tasks // 2),
+                            nn.Linear(
+                                cfg.dataset.input_dim, cfg.dataset.num_tasks // 2
+                            ),
                             nn.ReLU(inplace=True),
-                            nn.Linear(cfg.dataset.num_tasks // 2, cfg.dataset.num_tasks),
+                            nn.Linear(
+                                cfg.dataset.num_tasks // 2, cfg.dataset.num_tasks
+                            ),
                         ),
                     ]
                 )

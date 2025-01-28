@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from base.main import Config
 
+
 @dataclass
 class C2FTCNConfig(Config):
     feature_size: int

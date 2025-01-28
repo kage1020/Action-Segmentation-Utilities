@@ -119,7 +119,11 @@ class Base:
     @staticmethod
     def get_dirs(path: str | Path, recursive: bool = False) -> list[Path]:
         path = str(path)
-        dirs = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+        dirs = [
+            os.path.join(path, d)
+            for d in os.listdir(path)
+            if os.path.isdir(os.path.join(path, d))
+        ]
         if not recursive:
             return [Path(d) for d in dirs]
 
@@ -446,7 +450,9 @@ class Base:
         return boundaries
 
     @staticmethod
-    def to_segments(x: ndarray, backgrounds: ndarray | None = np.array([])) -> list[tuple[int, tuple[int, int]]]:
+    def to_segments(
+        x: ndarray, backgrounds: ndarray | None = np.array([])
+    ) -> list[tuple[int, tuple[int, int]]]:
         _x = np.array(x)
         diff = np.diff(_x, prepend=-100)
         indices = np.where(diff != 0)[0]

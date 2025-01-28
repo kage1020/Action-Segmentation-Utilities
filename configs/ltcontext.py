@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from base.main import Config
 
+
 @dataclass
 class LTCConfig:
     num_stages: int

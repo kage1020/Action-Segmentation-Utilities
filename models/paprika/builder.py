@@ -16,7 +16,9 @@ from configs.paprika import PaprikaConfig, PaprikaPseudoConfig, PaprikaDownstrea
 
 
 class Builder(Base):
-    def __init__(self, cfg: PaprikaConfig | PaprikaPseudoConfig | PaprikaDownstreamConfig):
+    def __init__(
+        self, cfg: PaprikaConfig | PaprikaPseudoConfig | PaprikaDownstreamConfig
+    ):
         self.cfg = cfg
 
     def get_all_video_ids(self) -> list[str]:
@@ -28,7 +30,9 @@ class Builder(Base):
         else:
             videos = []
             video_features_path = (
-                Path(self.cfg.dataset.base_dir) / self.cfg.dataset.name / self.cfg.dataset.feature_dir
+                Path(self.cfg.dataset.base_dir)
+                / self.cfg.dataset.name
+                / self.cfg.dataset.feature_dir
             )
             video_features = list(video_features_path.glob("*"))
             assert len(video_features) > 0, "No video features found!"
@@ -124,7 +128,7 @@ class Builder(Base):
 
         return matched_steps, matched_steps_score
 
-    def gather_all_frame_S3D_embeddings(self):
+    def gather_all_frame_embeddings(self):
         videos = self.get_all_video_ids()
 
         frame_embeddings = []
@@ -133,18 +137,16 @@ class Builder(Base):
         videos_missing_features = set()
         for v in tqdm(videos, desc="Loading video features", leave=False):
             try:
-                video_s3d: np.ndarray = np.load(
+                feature: np.ndarray = np.load(
                     Path(self.cfg.dataset.base_dir)
                     / self.cfg.dataset.name
                     / self.cfg.dataset.feature_dir
                     / f"{v}.npy"
                 )
-                # video_s3d shape: (num_clips, num_subclips, 512)
+                # feature shape: (num_clips, num_subclips, embedding_dim)
 
-                for c_idx in range(video_s3d.shape[0]):
-                    frame_embeddings.append(
-                        np.float64(np.mean(video_s3d[c_idx], axis=0))
-                    )
+                for c_idx in range(feature.shape[0]):
+                    frame_embeddings.append(np.float64(np.mean(feature[c_idx], axis=0)))
                     frame_lookup_table.append((v, c_idx))
 
             except FileNotFoundError:
@@ -189,7 +191,7 @@ class Builder(Base):
     def get_sim_scores(self):
         step_des_feats = self.get_step_des_feats("S3D")
         segment_video_embeddings, segment_video_lookup_table = (
-            self.gather_all_frame_S3D_embeddings()
+            self.gather_all_frame_embeddings()
         )
         self.find_step_similarities_for_segments_using_frame(
             step_des_feats,
@@ -529,6 +531,8 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VNM, f)
 
+        return pseudo_label_VNM
+
     def obtain_document_step_task_occurrence(self):
         document_dir = Path(self.cfg.dataset.base_dir) / self.cfg.document.name
         with open(document_dir / "step_label_text.json", "r") as f:
@@ -806,71 +810,70 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VTM, f)
 
+        return pseudo_label_VTM
+
     def get_pseudo_label_TCL_for_one_segment(
         self,
         step2node,
-        VTM_matched_wikihow_tasks,
-        VTM_matched_howto100m_tasks,
-        wikihow_step_task_occurrence,
-        howto100m_step_task_occurrence,
+        VTM_matched_document_tasks,
+        VTM_matched_dataset_tasks,
+        document_step_task_occurrence,
+        dataset_step_task_occurrence,
     ):
-        wikihow_tasknodes_this_segment = dict()
-        for task_id in VTM_matched_wikihow_tasks:
-            wikihow_stepids = np.where(wikihow_step_task_occurrence[:, task_id] > 0)[0]
-            for step_id in wikihow_stepids:
+        document_tasknodes_this_segment = dict()
+        for task_id in VTM_matched_document_tasks:
+            document_stepids = np.where(document_step_task_occurrence[:, task_id] > 0)[
+                0
+            ]
+            for step_id in document_stepids:
                 node_id = step2node[step_id]
-                if node_id not in wikihow_tasknodes_this_segment:
-                    wikihow_tasknodes_this_segment[node_id] = (
-                        wikihow_step_task_occurrence[step_id, task_id]
+                if node_id not in document_tasknodes_this_segment:
+                    document_tasknodes_this_segment[node_id] = (
+                        document_step_task_occurrence[step_id, task_id]
                     )
                 else:
-                    wikihow_tasknodes_this_segment[node_id] = max(
-                        wikihow_tasknodes_this_segment[node_id],
-                        wikihow_step_task_occurrence[step_id, task_id],
+                    document_tasknodes_this_segment[node_id] = max(
+                        document_tasknodes_this_segment[node_id],
+                        document_step_task_occurrence[step_id, task_id],
                     )
 
-        howto100m_tasknodes_this_segment = dict()
-        for task_id in VTM_matched_howto100m_tasks:
-            howto100m_stepids = np.where(
-                howto100m_step_task_occurrence[:, task_id] > 0
-            )[0]
-            for step_id in howto100m_stepids:
+        dataset_tasknodes_this_segment = dict()
+        for task_id in VTM_matched_dataset_tasks:
+            dataset_stepids = np.where(dataset_step_task_occurrence[:, task_id] > 0)[0]
+            for step_id in dataset_stepids:
                 node_id = step2node[step_id]
-                if node_id not in howto100m_tasknodes_this_segment:
-                    howto100m_tasknodes_this_segment[node_id] = (
-                        howto100m_step_task_occurrence[step_id, task_id]
+                if node_id not in dataset_tasknodes_this_segment:
+                    dataset_tasknodes_this_segment[node_id] = (
+                        dataset_step_task_occurrence[step_id, task_id]
                     )
                 else:
-                    howto100m_tasknodes_this_segment[node_id] = max(
-                        howto100m_tasknodes_this_segment[node_id],
-                        howto100m_step_task_occurrence[step_id, task_id],
+                    dataset_tasknodes_this_segment[node_id] = max(
+                        dataset_tasknodes_this_segment[node_id],
+                        dataset_step_task_occurrence[step_id, task_id],
                     )
 
-        howto100m_tasknodes_scores_sorted = sorted(
-            howto100m_tasknodes_this_segment.items(),
+        dataset_tasknodes_scores_sorted = sorted(
+            dataset_tasknodes_this_segment.items(),
             key=lambda item: item[1],
             reverse=True,
         )
         # [(node_id, node_score), ... , (node_id, node_score)]
 
         results = dict()
-        results["wikihow_tasknodes"] = list(wikihow_tasknodes_this_segment.keys())
+        results["document_tasknodes"] = list(document_tasknodes_this_segment.keys())
         matched_tasknodes, matched_tasknodes_scores = (
             self.find_matching_of_a_segment_given_sorted_val_corres_idx(
                 [
                     node_score
-                    for (node_id, node_score) in howto100m_tasknodes_scores_sorted
+                    for (node_id, node_score) in dataset_tasknodes_scores_sorted
                 ],
-                [
-                    node_id
-                    for (node_id, node_score) in howto100m_tasknodes_scores_sorted
-                ],
+                [node_id for (node_id, node_score) in dataset_tasknodes_scores_sorted],
                 criteria=self.cfg.label_find_tasknodes_criteria,
                 threshold=self.cfg.label_find_tasknodes_threshold,
                 topK=self.cfg.label_find_tasknodes_topK,
             )
         )
-        results["howto100m_tasknodes"] = {
+        results["dataset_tasknodes"] = {
             "indices": matched_tasknodes,
             "values": matched_tasknodes_scores,
         }
@@ -896,15 +899,15 @@ class Builder(Base):
         )
 
         with open(
-            sample_pseudo_label_savedir / "VTM-wikihow_step_task_occurrence.pickle",
+            sample_pseudo_label_savedir / "VTM-document_step_task_occurrence.pickle",
             "rb",
         ) as f:
-            wikihow_step_task_occurrence = pickle.load(f)
+            document_step_task_occurrence = pickle.load(f)
         with open(
-            sample_pseudo_label_savedir / "VTM-howto100m_step_task_occurrence.pickle",
+            sample_pseudo_label_savedir / "VTM-dataset_step_task_occurrence.pickle",
             "rb",
         ) as f:
-            howto100m_step_task_occurrence = pickle.load(f)
+            dataset_step_task_occurrence = pickle.load(f)
 
         # load VTM pseudo label file
         with open(
@@ -918,27 +921,29 @@ class Builder(Base):
             # start processing
             pseudo_label_TCL = dict()
             for sample_index in tqdm(range(len(samples))):
-                VTM_matched_wikihow_tasks = pseudo_label_VTM[sample_index][
-                    "wikihow_tasks"
+                VTM_matched_document_tasks = pseudo_label_VTM[sample_index][
+                    "document_tasks"
                 ]
-                VTM_matched_howto100m_tasks = pseudo_label_VTM[sample_index][
-                    "howto100m_tasks"
+                VTM_matched_dataset_tasks = pseudo_label_VTM[sample_index][
+                    "dataset_tasks"
                 ]["indices"][: self.cfg.label_num_dataset_tasks_to_consider]
 
                 pseudo_label_TCL[sample_index] = (
                     self.get_pseudo_label_TCL_for_one_segment(
                         self.cfg,
                         step2node,
-                        VTM_matched_wikihow_tasks,
-                        VTM_matched_howto100m_tasks,
-                        wikihow_step_task_occurrence,
-                        howto100m_step_task_occurrence,
+                        VTM_matched_document_tasks,
+                        VTM_matched_dataset_tasks,
+                        document_step_task_occurrence,
+                        dataset_step_task_occurrence,
                     )
                 )
 
             # save
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_TCL, f)
+
+        return pseudo_label_TCL
 
     def get_pseudo_label_NRL_for_one_segment(
         self,
@@ -999,7 +1004,7 @@ class Builder(Base):
         for khop in range(1, self.cfg.label_khop + 1):
             sample_pseudo_label_savepath = (
                 Path(sample_pseudo_label_savedir)
-                / f"NRL-hop_{khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.num_nodes}.pickle"
+                / f"NRL-hop_{khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.dataset.num_nodes}.pickle"
             )
             if not sample_pseudo_label_savepath.exists():
                 # start processing
@@ -1007,7 +1012,7 @@ class Builder(Base):
                 if khop == 1:
                     with open(
                         sample_pseudo_label_savedir
-                        / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.num_nodes}.pickle",
+                        / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.dataset.num_nodes}.pickle",
                         "rb",
                     ) as f:
                         pseudo_label_VNM = pickle.load(f)
@@ -1026,7 +1031,7 @@ class Builder(Base):
                 else:
                     with open(
                         sample_pseudo_label_savedir
-                        / f"NRL-hop_{khop - 1}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.num_nodes}.pickle",
+                        / f"NRL-hop_{khop - 1}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.dataset.num_nodes}.pickle",
                         "rb",
                     ) as f:
                         pseudo_label_NRL_previous_hop = pickle.load(f)
@@ -1056,6 +1061,7 @@ class Builder(Base):
                 with open(sample_pseudo_label_savepath, "wb") as f:
                     pickle.dump(pseudo_label_NRL, f)
 
+        return pseudo_label_NRL
 
     def gather_all_narration_MPNet_embeddings(self):
         videos = self.get_all_video_ids()
@@ -1082,7 +1088,6 @@ class Builder(Base):
 
         narration_embeddings = np.array(narration_embeddings)
         return narration_embeddings, narration_lookup_table
-
 
     def cos_sim(a, b):
         return torch.mm(
@@ -1119,7 +1124,6 @@ class Builder(Base):
             segment_narration_lookup_table,
         )
 
-
     def get_pseudo_label_DS_for_one_segment(self, sample_gt_path):
         step_scores = np.load(sample_gt_path)
         matched_steps, matched_steps_scores = self.find_matching_of_a_segment(
@@ -1141,7 +1145,9 @@ class Builder(Base):
         with open(sample_path, "rb") as f:
             samples = pickle.load(f)
 
-        sim_score_path = Path(f"{self.cfg.dataset.base_dir}/{self.cfg.dataset.name}/DS_sim_scores")
+        sim_score_path = Path(
+            f"{self.cfg.dataset.base_dir}/{self.cfg.dataset.name}/DS_sim_scores"
+        )
         sample_pseudo_label_save_dir = Path(
             f"{self.cfg.dataset.base_dir}/{self.cfg.dataset.name}/DS_pseudo_labels"
         )
@@ -1159,8 +1165,8 @@ class Builder(Base):
                 segment_sid = "segment_{}".format(segment_iid)
                 sample_gt_path = sim_score_path / video_sid / f"{segment_sid}.npy"
 
-                pseudo_label_DS[sample_index] = self.get_pseudo_label_DS_for_one_segment(
-                    sample_gt_path
+                pseudo_label_DS[sample_index] = (
+                    self.get_pseudo_label_DS_for_one_segment(sample_gt_path)
                 )
 
             # save
@@ -1168,7 +1174,6 @@ class Builder(Base):
                 pickle.dump(pseudo_label_DS, f)
 
         return
-
 
     def partition_dataset(self):
         """Randomly partition the dataset's features and pseudo labels."""
@@ -1194,7 +1199,7 @@ class Builder(Base):
             Path(self.cfg.dataset.base_dir)
             / self.cfg.dataset.name
             / "pseudo_labels"
-            / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.num_nodes}.pickle"
+            / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.dataset.num_nodes}.pickle"
         )
         with open(sample_pseudo_label_savepath, "rb") as f:
             pseudo_labels_all_VNM = pickle.load(f)
@@ -1224,7 +1229,7 @@ class Builder(Base):
             Path(self.cfg.dataset.base_dir)
             / self.cfg.dataset.name
             / "pseudo_labels"
-            / f"NRL-hop_{self.cfg.label_khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.num_nodes}.pickle"
+            / f"NRL-hop_{self.cfg.label_khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.dataset.num_nodes}.pickle"
         )
         with open(sample_pseudo_label_savepath, "rb") as f:
             pseudo_labels_all_NRL = pickle.load(f)
@@ -1269,7 +1274,7 @@ class Builder(Base):
                 Path(self.cfg.dataset.base_dir)
                 / self.cfg.dataset.name
                 / "pseudo_labels"
-                / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.num_nodes}-rank_{i}-of-{self.cfg.num_partitions}.pickle"
+                / f"VNM-criteria_{self.cfg.label_find_matched_nodes_criteria}-threshold_{self.cfg.label_find_matched_nodes_for_segments_threshold}-topK_{self.cfg.label_find_matched_nodes_for_segments_topK}-size_{self.cfg.dataset.num_nodes}-rank_{i}-of-{self.cfg.num_partitions}.pickle"
             )
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_labels_VNM_this, f)
@@ -1296,7 +1301,7 @@ class Builder(Base):
                 Path(self.cfg.dataset.base_dir)
                 / self.cfg.dataset.name
                 / "pseudo_labels"
-                / f"NRL-hop_{self.cfg.label_khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.num_nodes}-rank_{i}-of-{self.cfg.num_partitions}.pickle"
+                / f"NRL-hop_{self.cfg.label_khop}-criteria_{self.cfg.label_find_neighbors_criteria}-threshold_{self.cfg.label_find_neighbors_threshold}-topK_{self.cfg.label_find_neighbors_topK}-size_{self.cfg.dataset.num_nodes}-rank_{i}-of-{self.cfg.num_partitions}.pickle"
             )
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_labels_NRL_this, f)

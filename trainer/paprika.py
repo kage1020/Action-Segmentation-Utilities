@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 from loader.main import BaseDataLoader
 from trainer.main import Trainer, NoopLoss, NoopScheduler
-from models.paprika.builder import Builder
 from configs.paprika import PaprikaConfig, PaprikaPseudoConfig
+from visualizer.main import Visualizer
 
 from torch import Tensor
 
@@ -119,21 +119,7 @@ class PaprikaTrainer(Trainer):
         self.cfg = cfg
         self.criterion = PaprikaCriterion(cfg)
         self.optimizer = PaprikaOptimizer(cfg, model)
-        self.builder = Builder(cfg)
-
-    def make_pseudo_label(self):
-        self.builder.get_sim_scores()
-        self.builder.get_nodes()
-        self.builder.get_edges()
-
-        if "VNM" in self.cfg.adapter_objective:
-            self.builder.get_pseudo_label_VNM()
-        if "VTM" in self.cfg.adapter_objective:
-            self.builder.get_pseudo_label_VTM()
-        if "TCL" in self.cfg.adapter_objective:
-            self.builder.get_pseudo_label_TCL()
-        if "NRL" in self.cfg.adapter_objective:
-            self.builder.get_pseudo_label_NRL()
+        self.visualizer = Visualizer()
 
     def train(self, loader: BaseDataLoader):
         self.model.to(self.device)
@@ -161,6 +147,15 @@ class PaprikaTrainer(Trainer):
                 loss, dict_loss = self.criterion(
                     (pseudo_VNM, pseudo_VTM, pseudo_TCL, pseudo_NRL),
                     (VNM_answer, VTM_answer, TCL_answer, NRL_answer),
+                )
+                self.visualizer.add_metrics(
+                    epoch,
+                    {
+                        "VNM Loss": dict_loss["VNM"].item(),
+                        "VTM Loss": dict_loss["VTM"].item(),
+                        "TCL Loss": dict_loss["TCL"].item(),
+                        "NRL Loss": dict_loss["NRL"].item(),
+                    },
                 )
                 epoch_loss += loss.item()
                 loss.backward()

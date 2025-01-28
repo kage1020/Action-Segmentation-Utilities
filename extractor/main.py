@@ -50,7 +50,7 @@ class Extractor(Base):
             temporal_window=15,
             num_workers=1,
             boundary_dir=self.boundary_dir,
-            logger=self.logger
+            logger=self.logger,
         )
         with torch.no_grad():
             for batch, image_dir in tqdm(loader, leave=False):
