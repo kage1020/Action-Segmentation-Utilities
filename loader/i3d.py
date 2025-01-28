@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from base.main import Base
+from logger.main import Logger
 
 
 worker_info = threading.local()
@@ -115,12 +116,13 @@ class I3DDataset(Dataset):
         temporal_window: int,
         num_workers: int,
         boundary_dir: Path | None = None,
+        logger: Logger | None = Base,
     ):
         super().__init__()
         self.image_dir = Path(image_dir)
-        Base.info(f"Loading images from {self.image_dir} ...", end="")
+        logger.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = Base.get_dirs(image_dir, recursive=True)
-        Base.info("Done")
+        logger.info("Done", prefix="")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window
@@ -184,8 +186,11 @@ class I3DDataLoader(DataLoader):
         temporal_window: int,
         num_workers: int,
         boundary_dir: Path | None = None,
+        logger: Logger | None = Base,
     ):
-        dataset = I3DDataset(image_dir, temporal_window, num_workers, boundary_dir)
+        dataset = I3DDataset(
+            image_dir, temporal_window, num_workers, boundary_dir, logger=logger
+        )
         super().__init__(
             dataset,
             batch_size=1,
