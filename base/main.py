@@ -1,5 +1,6 @@
 import time
 import glob
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import random
@@ -109,7 +110,7 @@ class Base:
         return time.time() - start
 
     @staticmethod
-    def log_time(logger, seconds: float):
+    def log_time(seconds: float, logger: Logger | None = Logger()):
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         seconds = seconds % 60
@@ -117,18 +118,16 @@ class Base:
 
     @staticmethod
     def get_dirs(path: str | Path, recursive: bool = False) -> list[Path]:
-        path = Path(path)
-        dirs = [d for d in path.iterdir() if d.is_dir()]
+        path = str(path)
+        dirs = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+        if not recursive:
+            return [Path(d) for d in dirs]
 
-        if recursive:
-            with ThreadPoolExecutor() as executor:
-                sub_dirs = list(
-                    executor.map(lambda d: Base.get_dirs(d, recursive), dirs)
-                )
-                for sublist in sub_dirs:
-                    dirs.extend(sublist)
-
-        return dirs
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            results = list(executor.map(lambda d: Base.get_dirs(d, recursive), dirs))
+            for result in results:
+                dirs.extend(result)
+        return [Path(d) for d in dirs]
 
     @staticmethod
     def create_config(cfg: dict) -> Config:
@@ -447,7 +446,7 @@ class Base:
         return boundaries
 
     @staticmethod
-    def to_segments(x: ndarray, backgrounds: ndarray | None = np.array([])):
+    def to_segments(x: ndarray, backgrounds: ndarray | None = np.array([])) -> list[tuple[int, tuple[int, int]]]:
         _x = np.array(x)
         diff = np.diff(_x, prepend=-100)
         indices = np.where(diff != 0)[0]
