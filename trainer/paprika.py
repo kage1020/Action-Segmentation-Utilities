@@ -148,6 +148,7 @@ class PaprikaTrainer(Trainer):
                     (pseudo_VNM, pseudo_VTM, pseudo_TCL, pseudo_NRL),
                     (VNM_answer, VTM_answer, TCL_answer, NRL_answer),
                 )
+
                 self.visualizer.add_metrics(
                     epoch,
                     {
@@ -157,6 +158,7 @@ class PaprikaTrainer(Trainer):
                         "NRL Loss": dict_loss["NRL"].item(),
                     },
                 )
+
                 epoch_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()
