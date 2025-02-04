@@ -389,10 +389,14 @@ class Visualizer(Base):
                 if show_segment:
                     seg = segmentation.copy()
                     segment_offset = 90
-                    bar_left_pos = segment_offset + int(i / reader.num_frames * (seg.shape[1] - segment_offset*2-bar_width))
+                    bar_left_pos = segment_offset + int(
+                        i
+                        / reader.num_frames
+                        * (seg.shape[1] - segment_offset * 2 - bar_width)
+                    )
                     bar_start = bar_left_pos
                     bar_end = bar_left_pos + bar_width
-                    seg[55:seg.shape[0]//2, bar_start:bar_end] = 250
+                    seg[55 : seg.shape[0] // 2, bar_start:bar_end] = 250
                     image = np.concatenate([image, seg], axis=0)
                 if show_label:
                     seg = np.full(
