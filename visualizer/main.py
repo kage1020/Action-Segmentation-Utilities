@@ -23,6 +23,10 @@ class Visualizer(Base):
         super().__init__(name="Visualizer")
 
     @staticmethod
+    def save_image(image: ndarray, file_path: str):
+        cv2.imwrite(file_path, image)
+
+    @staticmethod
     def plot_feature(
         feature: ndarray,
         file_path: str = "feature.png",
@@ -178,6 +182,7 @@ class Visualizer(Base):
         int_to_text: dict[int, str] = dict(),
         palette: list[tuple[float, float, float, float]] | None = None,
         return_canvas: bool = False,
+        is_jupyter: bool = False,
         dynamic_palette: bool = False,
     ):
         assert (
@@ -303,6 +308,10 @@ class Visualizer(Base):
             line_ax.set_ylabel("Confidence")
             bar_ax.set_xticks([])
             bar_ax.set_xlabel("")
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+            return
         if return_canvas:
             from matplotlib.backends.backend_agg import FigureCanvasAgg
 
@@ -340,8 +349,7 @@ class Visualizer(Base):
         video_path: str | None = None,
         out_path: str = "action_segmentation.mp4",
         backgrounds: ndarray = np.array([]),
-        mapping: dict[str, int] = dict(),
-        reverse_mapping: dict[int, str] = dict(),
+        int_to_text: dict[int, str] = dict(),
         num_classes: int = 50,
         show_segment: bool = True,
         show_label: bool = True,
@@ -358,12 +366,13 @@ class Visualizer(Base):
                 backgrounds=backgrounds,
                 num_classes=num_classes,
                 return_canvas=True,
+                int_to_text=int_to_text,
             )
             segmentation = cv2.resize(
                 segmentation,
                 None,
                 fx=video_size[1] / segmentation.shape[1],
-                fy=1.0,
+                fy=video_size[1] / segmentation.shape[1],
             )
             video_size = (video_size[0] + segmentation.shape[0], video_size[1])
             bar_width = max(5, int(segmentation.shape[1] * 0.005))
@@ -379,9 +388,11 @@ class Visualizer(Base):
             for i, image in enumerate(tqdm(reader, total=reader.num_frames)):
                 if show_segment:
                     seg = segmentation.copy()
-                    bar_start = i
-                    bar_end = i + bar_width
-                    seg[:, bar_start:bar_end] = 250
+                    segment_offset = 90
+                    bar_left_pos = segment_offset + int(i / reader.num_frames * (seg.shape[1] - segment_offset*2-bar_width))
+                    bar_start = bar_left_pos
+                    bar_end = bar_left_pos + bar_width
+                    seg[55:seg.shape[0]//2, bar_start:bar_end] = 250
                     image = np.concatenate([image, seg], axis=0)
                 if show_label:
                     seg = np.full(
@@ -390,10 +401,10 @@ class Visualizer(Base):
                     if pred is not None and gt is None:
                         cv2.putText(
                             img=seg,
-                            text="Pred: " + reverse_mapping[pred[i]],
+                            text="Pred: " + int_to_text[pred[i]],
                             org=(
-                                reader.image_size[1] // 30,
-                                reader.image_size[0] // 4 * 3,
+                                text_area_size[1] // 4,
+                                text_area_size[0] // 2 + 20,
                             ),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -403,10 +414,10 @@ class Visualizer(Base):
                     if pred is None and gt is not None:
                         cv2.putText(
                             img=seg,
-                            text="GT: " + reverse_mapping[gt[i]],
+                            text="GT: " + int_to_text[gt[i]],
                             org=(
-                                reader.image_size[1] // 30,
-                                reader.image_size[0] // 4 * 3,
+                                text_area_size[1] // 4,
+                                text_area_size[0] // 2 + 20,
                             ),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -416,10 +427,10 @@ class Visualizer(Base):
                     if pred is not None and gt is not None:
                         cv2.putText(
                             img=seg,
-                            text="Pred: " + reverse_mapping[pred[i]],
+                            text="Pred: " + int_to_text[pred[i]],
                             org=(
-                                reader.image_size[1] // 30,
-                                reader.image_size[0] // 4 * 3,
+                                text_area_size[1] // 4,
+                                text_area_size[0] // 2 + 20,
                             ),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
@@ -428,10 +439,10 @@ class Visualizer(Base):
                         )
                         cv2.putText(
                             img=seg,
-                            text="GT: " + reverse_mapping[gt[i]],
+                            text="GT: " + int_to_text[gt[i]],
                             org=(
-                                reader.image_size[1] * 16 // 30,
-                                reader.image_size[0] // 4 * 3,
+                                text_area_size[1] // 4 * 3,
+                                text_area_size[0] // 2 + 20,
                             ),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=2,
