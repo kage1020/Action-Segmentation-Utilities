@@ -18,6 +18,7 @@ class VideoReader:
         self.image_dir = image_dir
         self.images = images
         self.video_path = video_path
+        self.index = 0
 
         if image_dir is not None:
             self.image_paths = Base.get_image_paths(image_dir)
@@ -41,15 +42,16 @@ class VideoReader:
         return self
 
     def __next__(self):
+        if self.index >= self.num_frames:
+            raise StopIteration
+
         if self.image_dir is not None:
-            for image_path in self.image_paths:
-                return Base.load_image(image_path)
+            self.index += 1
+            return Base.load_image(self.image_paths[self.index - 1])
         elif self.images is not None:
-            for image in self.images:
-                if isinstance(image, str):
-                    return Base.load_image(image)
-                else:
-                    return image
+            self.index += 1
+            image = self.images[self.index - 1]
+            return Base.load_image(image) if isinstance(image, str) else image
         elif self.video_path is not None:
             while True:
                 ret, frame = self.cap.read()
