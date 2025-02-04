@@ -595,7 +595,6 @@ class Encoder(nn.Module):
 
         # encoder block
         # feature: (batch size, feature map dimension, number of frames)
-        # outputs: (batch size, number of action classes, number of frames)
         for layer in self.layers:
             feature = layer(feature, None, mask)
 
