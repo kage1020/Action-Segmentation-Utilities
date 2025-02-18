@@ -1,7 +1,7 @@
 from logging import (
     getLogger,
     StreamHandler,
-    Formatter as DefaultFormatter,
+    Formatter,
     INFO,
     WARNING,
     ERROR,
@@ -19,7 +19,7 @@ class Color:
     RESET = "\033[0m"
 
 
-class Formatter(DefaultFormatter):
+class ColorFormatter(Formatter):
     def format(self, record):
         if record.levelno == INFO:
             record.msg = Color.GREEN + record.msg + Color.RESET
@@ -36,6 +36,17 @@ class Formatter(DefaultFormatter):
         return message + suffix
 
 
+class ColorStreamHandler(StreamHandler):
+    def __init__(self, stream=None):
+        super().__init__(stream)
+        self.setLevel(INFO)
+        self.terminator = ""
+        formatter = ColorFormatter(
+            "[%(asctime)s][%(name)s][%(levelname)s] - %(message)s"
+        )
+        self.setFormatter(formatter)
+
+
 class Logger:
     def __init__(
         self,
@@ -44,17 +55,13 @@ class Logger:
     ):
         self.logger = getLogger(name)
         self.logger.setLevel(INFO)
-        if self.logger.name != "root":
-            self.logger.propagate = False
-        if not self.logger.hasHandlers():
-            handler = StreamHandler(stdout)
-            handler.setLevel(INFO)
-            handler.terminator = ""
-            formatter = Formatter(
-                "[%(asctime)s][%(name)s][%(levelname)s] - %(message)s"
-            )
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+        handler = ColorStreamHandler(stdout)
+        self.logger.addHandler(handler)
+        self.logger.root.handlers = [
+            h
+            for h in self.logger.root.handlers
+            if not getattr(h, "stream", None) == stdout
+        ]
         self.width = width
 
     @staticmethod
