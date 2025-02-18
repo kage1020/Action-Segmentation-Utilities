@@ -315,6 +315,19 @@ class Base:
             self.text_to_int[self.int_to_text[c]] = mask_value
 
     @staticmethod
+    def get_gt(gt_path: str, text_to_int: dict[str, int] = dict()) -> list[int]:
+        try:
+            with open(gt_path, "r") as f:
+                lines = f.readlines()
+                lines = [line.strip() for line in lines if line.strip() != ""]
+                lines = [text_to_int[line] for line in lines]
+        except FileNotFoundError:
+            Base.warning(f"GT file was not found in {gt_path}")
+            return []
+
+        return [int(line) for line in lines]
+
+    @staticmethod
     def get_actions(
         actions_path: str,
         has_header: bool = False,
