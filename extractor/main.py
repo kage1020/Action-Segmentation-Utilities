@@ -4,11 +4,12 @@ from pathlib import Path
 from tqdm import tqdm
 import numpy as np
 import torch
-import torch.nn as nn
 
 from base.main import Base
 from loader.i3d import I3DDataLoader
 from loader.s3d import S3DDataLoader
+from extractor.models.i3d import I3D
+from extractor.models.s3d_howto100m import S3D
 
 # TODO: support for trimmed video
 
@@ -41,7 +42,7 @@ class Extractor(Base):
 
         os.makedirs(self.out_dir, exist_ok=True)
 
-    def extract_i3d_features(self, rgb_model: nn.Module, flow_model: nn.Module):
+    def extract_i3d_features(self, rgb_model: I3D, flow_model: I3D):
         if self.image_dir is None:
             return
 
@@ -62,8 +63,8 @@ class Extractor(Base):
                 for rgb, flows in tqdm(batch, leave=False):
                     rgb = rgb.to(Base.get_device())
                     flows = flows.to(Base.get_device())
-                    rgb_features = rgb_model(rgb[0])
-                    flows_features = flow_model(flows[0])
+                    rgb_features = rgb_model.extract_features(rgb[0])
+                    flows_features = flow_model.extract_features(flows[0])
                     features.append(
                         torch.cat([rgb_features, flows_features], dim=1).cpu().numpy()
                     )
@@ -71,7 +72,7 @@ class Extractor(Base):
                 features = np.concatenate(features, axis=0)
                 np.save(out_path, features)
 
-    def extract_s3d_features(self, model: nn.Module):
+    def extract_s3d_features(self, model: S3D):
         if self.image_dir is None:
             return
 

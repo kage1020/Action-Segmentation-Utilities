@@ -42,15 +42,6 @@ class ImageBatch(Dataset):
             optical_flow.calc(grays[i], grays[i + 1], None)
             for i in range(len(grays) - 1)
         ]
-        # with ThreadPoolExecutor() as executor:
-        #     flows = list(
-        #         executor.map(
-        #             optical_flow.calc,
-        #             grays[:-1],
-        #             grays[1:],
-        #             [None] * (len(grays) - 1),
-        #         )
-        #     )
         flows.append(flows[-1])
         pre_images = torch.empty((self.temporal_window + 1, 3, 224, 224))
         pre_flows = torch.empty((self.temporal_window + 1, 2, 224, 224))
@@ -122,7 +113,7 @@ class I3DDataset(Dataset):
         self.image_dir = Path(image_dir)
         logger.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = Base.get_dirs(image_dir, recursive=True)
-        logger.info("Done", prefix="")
+        print("Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window

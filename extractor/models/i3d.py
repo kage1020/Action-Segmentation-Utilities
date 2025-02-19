@@ -31,7 +31,7 @@ class MaxPool3dSamePadding(nn.MaxPool3d):
         """
         Parameters:
             dim: Dimension to pad.
-            size: Size of dimmension.
+            size: Size of dimension.
         Returns:
             Padding size.
         """
@@ -114,7 +114,7 @@ class Unit3D(nn.Module):
         """
         Parameters:
             dim: Dimension to pad.
-            size: Size of dimmension.
+            size: Size of dimension.
         Returns:
             Padding size.
         """
