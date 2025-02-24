@@ -78,7 +78,7 @@ def main(cfg: Config) -> None:
         num_classes=cfg.dataset.num_classes,
         input_dim=cfg.dataset.input_dim,
     )
-    model = Base.load_model(model, cfg.best_model_path, device, Base.get_logger("main"))
+    model = Base.load_model(model, cfg.model_path, device, Base.get_logger("main"))
     trainer = ASFormerTrainer(cfg, model)
 
     trainer.train(train_loader, test_loader)

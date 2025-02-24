@@ -5,7 +5,7 @@ verbose: False
 val_skip: True
 train: True
 model_name: asformer
-best_model_path: models/asformer/breakfast/best_split${split}.model
+model_path: models/asformer/breakfast/best_split${split}.model
 result_dir: results/asformer
 epochs: 120
 lr: 5e-4

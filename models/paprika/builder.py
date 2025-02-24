@@ -254,7 +254,7 @@ class Builder(Base):
                     n_clusters=None,
                     linkage=self.cfg.step_clustering_linkage,
                     distance_threshold=self.cfg.step_clustering_distance_threshold,
-                    affinity=self.cfg.step_clustering_affinity,
+                    metric=self.cfg.step_clustering_affinity,
                 ).fit(step_des_feats)
                 # distance_threshold:
                 #   The linkage distance threshold above which, clusters will not be merged.
@@ -424,7 +424,7 @@ class Builder(Base):
     def get_node_transition_candidates(
         self, step2node: dict[int, int], G_wikihow: csr_matrix, G_howto100m: csr_matrix
     ):
-        candidates: dict[tuple[int, int], list[float]] = dict(list)
+        candidates: dict[tuple[int, int], list[float]] = {}
 
         for step_id in tqdm(range(len(step2node))):
             for direct_outstep_id in G_wikihow[step_id].indices:
@@ -435,7 +435,7 @@ class Builder(Base):
 
         for step_id in tqdm(range(len(step2node))):
             for direct_outstep_id in G_howto100m[step_id].indices:
-                conf = G_howto100m[step_id, direct_outstep_id]
+                conf = G_howto100m[step_id, direct_outstep_id]  # type: ignore
                 node_id = step2node[step_id]
                 direct_outnode_id = step2node[direct_outstep_id]
                 candidates[(node_id, direct_outnode_id)].append(conf)
@@ -531,7 +531,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VNM, f)
 
-        return pseudo_label_VNM
+        return pseudo_label_VNM  # type: ignore
 
     def obtain_document_step_task_occurrence(self):
         document_dir = Path(self.cfg.dataset.base_dir) / self.cfg.document.name
@@ -810,7 +810,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VTM, f)
 
-        return pseudo_label_VTM
+        return pseudo_label_VTM  # type: ignore
 
     def get_pseudo_label_TCL_for_one_segment(
         self,
@@ -930,7 +930,6 @@ class Builder(Base):
 
                 pseudo_label_TCL[sample_index] = (
                     self.get_pseudo_label_TCL_for_one_segment(
-                        self.cfg,
                         step2node,
                         VTM_matched_document_tasks,
                         VTM_matched_dataset_tasks,
@@ -943,7 +942,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_TCL, f)
 
-        return pseudo_label_TCL
+        return pseudo_label_TCL  # type: ignore
 
     def get_pseudo_label_NRL_for_one_segment(
         self,
@@ -1061,7 +1060,7 @@ class Builder(Base):
                 with open(sample_pseudo_label_savepath, "wb") as f:
                     pickle.dump(pseudo_label_NRL, f)
 
-        return pseudo_label_NRL
+        return pseudo_label_NRL  # type: ignore
 
     def gather_all_narration_MPNet_embeddings(self):
         videos = self.get_all_video_ids()
@@ -1089,7 +1088,7 @@ class Builder(Base):
         narration_embeddings = np.array(narration_embeddings)
         return narration_embeddings, narration_lookup_table
 
-    def cos_sim(a, b):
+    def cos_sim(self, a, b):
         return torch.mm(
             F.normalize(a, p=2, dim=1), F.normalize(b, p=2, dim=1).transpose(0, 1)
         )

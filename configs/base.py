@@ -45,7 +45,7 @@ class Config(DictConfig):
     # learning
     train: bool
     model_name: str
-    best_model_path: str
+    model_path: str
     result_dir: str
     epochs: int
     lr: float

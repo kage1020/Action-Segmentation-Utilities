@@ -110,7 +110,7 @@ class Base:
         return time.time() - start
 
     @staticmethod
-    def log_time(seconds: float, logger: Logger | None = Logger()):
+    def log_time(seconds: float, logger: Logger = Logger()):
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         seconds = seconds % 60
@@ -464,7 +464,7 @@ class Base:
 
     @staticmethod
     def to_segments(
-        x: ndarray, backgrounds: ndarray | None = np.array([])
+        x: ndarray, backgrounds: ndarray = np.array([])
     ) -> list[tuple[int, tuple[int, int]]]:
         _x = np.array(x)
         diff = np.diff(_x, prepend=-100)
