@@ -163,7 +163,7 @@ class LTContextTrainer(Trainer):
                     f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
-            acc, edit, f1 = self.train_evaluator.get()
+            acc, edit, f1 = self.train_evaluator.get()  # type: ignore
             self.logger.info(
                 f"Epoch {epoch+1:03d} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
@@ -228,7 +228,7 @@ class LTContextTrainer(Trainer):
                         ),
                     )
 
-            acc, edit, f1 = self.test_evaluator.get()
+            acc, edit, f1 = self.test_evaluator.get()  # type: ignore
             self.logger.info(
                 f"Test | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )

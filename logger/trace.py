@@ -10,7 +10,7 @@ def trace_module(frame, event, arg):
         and ".cache" not in module_name
         and "<" not in module_name
     ):
-        print(f"Module executed: {module_name}")
+        print(f"Module loaded: {module_name}")
     return trace_module
 
 

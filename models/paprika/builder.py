@@ -428,7 +428,7 @@ class Builder(Base):
 
         for step_id in tqdm(range(len(step2node))):
             for direct_outstep_id in G_wikihow[step_id].indices:
-                conf: float = G_wikihow[step_id, direct_outstep_id]
+                conf: float = G_wikihow[step_id, direct_outstep_id]  # type: ignore
                 node_id = step2node[step_id]
                 direct_outnode_id = step2node[direct_outstep_id]
                 candidates[(node_id, direct_outnode_id)].append(conf)

@@ -14,6 +14,7 @@ from .reader import VideoReader
 
 from torch import Tensor
 from numpy import ndarray
+from matplotlib.axes import Axes
 
 
 class Visualizer(Base):
@@ -189,6 +190,11 @@ class Visualizer(Base):
             pred is not None or gt is not None
         ), "Either `pred` or `gt` must be provided"
 
+        fig_size = (10, 3)
+        unique_label = []
+        max_num_segments = 0
+        pred_segments = []
+        gt_segments = []
         if pred is not None and gt is None:
             _pred = Visualizer.mask_label_with_backgrounds(pred, backgrounds)
             pred_segments = Visualizer.to_segments(_pred)
@@ -221,6 +227,8 @@ class Visualizer(Base):
         gs = fig.add_gridspec(3, 1)
         acc = [0, 0]  # [Pred, GT]
 
+        bar_ax: Axes = None  # type: ignore
+        legend_anchor = (0.5, -0.5)
         if (pred is None or gt is None) and confidences is None:
             fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.5)
             legend_anchor = (0.5, -0.5)
@@ -371,8 +379,8 @@ class Visualizer(Base):
             segmentation = cv2.resize(
                 segmentation,
                 None,
-                fx=video_size[1] / segmentation.shape[1],
-                fy=video_size[1] / segmentation.shape[1],
+                fx=video_size[1] / segmentation.shape[1],  # type: ignore
+                fy=video_size[1] / segmentation.shape[1],  # type: ignore
             )
             video_size = (video_size[0] + segmentation.shape[0], video_size[1])
             bar_width = max(5, int(segmentation.shape[1] * 0.005))
@@ -387,15 +395,15 @@ class Visualizer(Base):
         ) as writer:
             for i, image in enumerate(tqdm(reader, total=reader.num_frames)):
                 if show_segment:
-                    seg = segmentation.copy()
+                    seg = segmentation.copy()  # type: ignore
                     segment_offset = 90
                     bar_left_pos = segment_offset + int(
                         i
                         / reader.num_frames
-                        * (seg.shape[1] - segment_offset * 2 - bar_width)
+                        * (seg.shape[1] - segment_offset * 2 - bar_width)  # type: ignore
                     )
                     bar_start = bar_left_pos
-                    bar_end = bar_left_pos + bar_width
+                    bar_end = bar_left_pos + bar_width  # type: ignore
                     seg[55 : seg.shape[0] // 2, bar_start:bar_end] = 250
                     image = np.concatenate([image, seg], axis=0)
                 if show_label:

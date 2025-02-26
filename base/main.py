@@ -1,6 +1,7 @@
 import time
 import glob
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import random
@@ -16,7 +17,16 @@ from numpy import ndarray
 from torch import Tensor
 
 
+load_dotenv()
+
+
+class Env:
+    def __getattr__(self, key):
+        return os.getenv(key) == "True"
+
+
 class Base:
+    env = Env()
     backgrounds: list[int]
     text_to_int: dict[str, int] = dict()
     int_to_text: dict[int, str] = dict()

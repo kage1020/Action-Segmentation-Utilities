@@ -214,18 +214,18 @@ class STConv3D(nn.Module):
             self.conv1 = nn.Conv3d(
                 input_dim,
                 output_dim,
-                kernel_size=spatial_kernel_size,
-                stride=spatial_stride,
-                padding=spatial_padding,
+                kernel_size=spatial_kernel_size,  # type: ignore
+                stride=spatial_stride,  # type: ignore
+                padding=spatial_padding,  # type: ignore
                 bias=False,
             )
             self.bn1 = nn.BatchNorm3d(output_dim)
             self.conv2 = nn.Conv3d(
                 output_dim,
                 output_dim,
-                kernel_size=temporal_kernel_size,
-                stride=temporal_stride,
-                padding=temporal_padding,
+                kernel_size=temporal_kernel_size,  # type: ignore
+                stride=temporal_stride,  # type: ignore
+                padding=temporal_padding,  # type: ignore
                 bias=False,
             )
             self.bn2 = nn.BatchNorm3d(output_dim)
@@ -369,5 +369,5 @@ class S3D(nn.Module):
 
         return out
 
-    def extract_text_features(self, x: list[str]):
+    def extract_text_features(self, x: list[str]) -> Tensor:
         return self.text_module(x)["text_embedding"]
