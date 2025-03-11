@@ -38,7 +38,7 @@ class BaseDataset(Dataset, Base):
         self.data_dir = f"{cfg.dataset.base_dir}/{cfg.dataset.name}"
         self.phase = "train" if train else "test"
 
-        self.__load_videos()
+        self._load_videos()
 
     def __len__(self):
         return len(self.videos)
@@ -47,12 +47,12 @@ class BaseDataset(Dataset, Base):
         video_path = Path(
             f"{self.data_dir}/{self.cfg.dataset.feature_dir}/{self.videos[idx]}.npy"
         )
-        features = self.__get_video(video_path)
+        features = self._get_video(video_path)
         mask = torch.ones(len(self.text_to_int), features.size(1)).float()
-        gt = self.__get_gt(video_path)
+        gt = self._get_gt(video_path)
         return features, mask, gt, video_path.stem
 
-    def __load_videos(self):
+    def _load_videos(self):
         with open(
             f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.{self.cfg.dataset.semi_per:.2f}.bundle",
             "r",
@@ -61,13 +61,13 @@ class BaseDataset(Dataset, Base):
             self.videos = [Path(line.strip()).stem for line in lines if line.strip()]
         self.logger.info(f"{len(self.videos)} videos loaded")
 
-    def __get_video(self, video_path: Path):
+    def _get_video(self, video_path: Path):
         features = np.load(video_path)
         features = torch.from_numpy(features).float()
         features = features[:, :: self.cfg.dataset.sampling_rate]
         return features
 
-    def __get_gt(self, video_path: Path):
+    def _get_gt(self, video_path: Path):
         gt_path = Path(
             f"{self.data_dir}/{self.cfg.dataset.gt_dir}/{video_path.stem}.txt"
         )
@@ -80,7 +80,7 @@ class BaseDataset(Dataset, Base):
         else:
             return torch.tensor([])
 
-    def __get_pseudo(self, video_path: Path):
+    def _get_pseudo(self, video_path: Path):
         pseudo_path = Path(
             f"{self.data_dir}/{self.cfg.dataset.pseudo_dir}/{video_path.stem}.txt"
         )
@@ -93,7 +93,7 @@ class BaseDataset(Dataset, Base):
         else:
             return torch.tensor([])
 
-    def __get_prob(self, video_path: Path):
+    def _get_prob(self, video_path: Path):
         prob_path = Path(
             f"{self.data_dir}/{self.cfg.dataset.prob_dir}/{video_path.stem}.npy"
         )
@@ -119,7 +119,7 @@ class BaseDataset(Dataset, Base):
                 if gt_path.exists():
                     continue
 
-                features = self.__get_video(video_path)
+                features = self._get_video(video_path)
                 features = features.unsqueeze(0)
                 features = features.to(model.device)
                 output = model(features)
@@ -141,8 +141,10 @@ class BaseDataset(Dataset, Base):
 class BaseDataLoader(DataLoader):
     dataset: BaseDataset
 
-    def __init__(self, cfg: Config, train: bool = True, collate_fn=None):
-        dataset = BaseDataset(cfg, train=train)
+    def __init__(
+        self, dataset: BaseDataset, cfg: Config, train: bool = True, collate_fn=None
+    ):
+        self.dataset = dataset
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,

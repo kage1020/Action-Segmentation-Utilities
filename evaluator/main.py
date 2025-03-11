@@ -182,20 +182,32 @@ class Evaluator(Base):
         self,
         gt: ndarray | Tensor,
         pred: ndarray | Tensor,
-        prob: ndarray | Tensor | None = None,
+        task: Literal[
+            "action_segmentation", "anomaly_detection"
+        ] = "action_segmentation",
     ) -> None:
-        self.num_videos += 1
-        self.num_total_frames += len(gt)
-        self.num_correct_frames += (gt == pred).sum()
-        self.edit_distances += Evaluator.edit_score(gt, pred, self.backgrounds)
-        tps, fps, fns = zip(
-            *[Evaluator.tp_fp_fn(gt, pred, tau, self.backgrounds) for tau in self.taus]
-        )
-        self.tps = [self.tps[i] + tps[i] for i in range(len(self.tps))]
-        self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
-        self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
-        if prob:
-            self.aucs.append(Evaluator.auc(gt, prob, self.backgrounds))
+        if task == "action_segmentation":
+            self.num_videos += 1
+            self.num_total_frames += len(gt)
+            self.num_correct_frames += (gt == pred).sum()
+            self.edit_distances += Evaluator.edit_score(gt, pred, self.backgrounds)
+            tps, fps, fns = zip(
+                *[
+                    Evaluator.tp_fp_fn(gt, pred, tau, self.backgrounds)
+                    for tau in self.taus
+                ]
+            )
+            self.tps = [self.tps[i] + tps[i] for i in range(len(self.tps))]
+            self.fps = [self.fps[i] + fps[i] for i in range(len(self.fps))]
+            self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
+        else:
+            # to prob
+            if isinstance(pred, ndarray):
+                prob = Base.to_tensor(pred).softmax(dim=1).cpu().numpy()
+                self.aucs.append(Evaluator.auc(gt, prob, self.backgrounds))
+            else:
+                prob = pred.softmax(dim=1).cpu().numpy()
+                self.aucs.append(Evaluator.auc(gt, prob, self.backgrounds))
 
     def get(
         self,
