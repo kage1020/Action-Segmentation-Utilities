@@ -93,7 +93,7 @@ class S3DDataset(Dataset):
                 self.image_dir / video_name / f"{i:06d}.jpg"
                 if (self.image_dir / video_name / f"{i:06d}.jpg").exists()
                 else self.image_dir / video_name / f"{i:08d}.jpg"
-                for i in range(boundaries[0], boundaries[1] + 1)
+                for i in range(boundaries[0] - 1, boundaries[1])
             ]
             assert len(image_paths) == boundaries[1] - boundaries[0] + 1
 

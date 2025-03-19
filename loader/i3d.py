@@ -107,13 +107,13 @@ class I3DDataset(Dataset):
         temporal_window: int,
         num_workers: int,
         boundary_dir: Path | None = None,
-        logger: Logger | None = Base,
+        logger: Logger = Base,
     ):
         super().__init__()
         self.image_dir = Path(image_dir)
         logger.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = Base.get_dirs(image_dir, recursive=True)
-        print("Done")
+        Base.info("Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window
@@ -142,7 +142,7 @@ class I3DDataset(Dataset):
                 self.image_dir / video_name / f"{i:06d}.jpg"
                 if f"{i:06d}.jpg" in existing_images
                 else self.image_dir / video_name / f"{i:08d}.jpg"
-                for i in range(boundary[0], boundary[1] + 1)
+                for i in range(boundary[0] - 1, boundary[1])
             ]
             assert len(image_paths) == boundary[1] - boundary[0] + 1
 

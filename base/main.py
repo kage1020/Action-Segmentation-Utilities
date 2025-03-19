@@ -261,6 +261,12 @@ class Base:
         return [Base.load_image(img_path) for img_path in image_paths]
 
     @staticmethod
+    def to_image(feature: ndarray) -> ndarray:
+        _feature = feature - feature.min()
+        _feature = _feature / _feature.max()
+        return (_feature * 255).astype(np.uint8)
+
+    @staticmethod
     def get_class_mapping(
         mapping_path: str, has_header: bool = False, separator: str = " "
     ) -> tuple[dict[str, int], dict[int, str]]:

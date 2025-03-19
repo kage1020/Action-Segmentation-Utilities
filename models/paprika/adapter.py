@@ -107,7 +107,7 @@ class Adapter(nn.Module):
             )
 
     def forward(
-        self, features: Tensor, prediction: bool = False
+        self, features: Tensor, prediction: bool = True
     ) -> Tensor | tuple[Tensor, list[Tensor], list[Tensor], list[Tensor]]:
         """
         features: (B, 512)

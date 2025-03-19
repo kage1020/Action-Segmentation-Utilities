@@ -1,6 +1,7 @@
 from pathlib import Path
 from tqdm import tqdm
 import cv2
+import math
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -28,15 +29,33 @@ class Visualizer(Base):
         cv2.imwrite(file_path, image)
 
     @staticmethod
+    def plot_image(
+        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
+    ):
+        assert isinstance(feature, ndarray), "Feature must be a numpy array"
+        assert len(feature.shape) == 3, "Feature must be a 3D array"
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.imshow(feature)
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+            return fig
+        else:
+            matplotlib.use("Agg")
+            fig.savefig(file_path)
+        plt.close(fig)
+
+    @staticmethod
     def plot_feature(
         feature: ndarray,
         file_path: str = "feature.png",
         is_jupyter: bool = False,
         cmap: str = "viridis",
     ):
-        assert isinstance(feature, ndarray) or isinstance(
-            feature, Tensor
-        ), "Feature must be a numpy array or a torch tensor"
+        assert isinstance(feature, ndarray), "Feature must be a numpy array"
         assert len(feature.shape) == 2, "Feature must be a 2D array"
 
         fig = plt.figure()
@@ -51,6 +70,48 @@ class Visualizer(Base):
         else:
             matplotlib.use("Agg")
             fig.savefig(file_path)
+        plt.close(fig)
+
+    @staticmethod
+    def plot_features(
+        features: list[ndarray] | ndarray,
+        file_paths: list[str] = [],
+        is_jupyter: bool = False,
+        ncols: int = None,
+        nrows: int = None,
+        cmap: str = "viridis",
+    ):
+        assert isinstance(features, list) or isinstance(
+            features, ndarray
+        ), "Features must be a list or a numpy array"
+        if isinstance(features, ndarray):
+            assert len(features.shape) == 3, "ndarray features must be a 3D array"
+            assert len(features) == len(
+                file_paths
+            ), "Length of features and file_paths must be the same"
+
+        num_features = len(features)
+        nrows = math.floor(math.sqrt(num_features)) if nrows is None else nrows
+        ncols = math.ceil(num_features / nrows) if ncols is None else ncols
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=(ncols * 6, nrows * 5), tight_layout=True
+        )
+        axes = axes.flatten()
+
+        for ax, feature in zip(axes, features):
+            axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
+            fig.colorbar(axfig, ax=ax)
+
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05, wspace=0.3)
+
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+            return fig
+        else:
+            matplotlib.use("Agg")
+            fig.savefig(file_paths[0])
+
         plt.close(fig)
 
     @staticmethod
