@@ -1,11 +1,13 @@
 from pathlib import Path
-import torch
+
 import numpy as np
+import torch
 from torch.utils.data import DataLoader
 
-from asu.loader.main import BaseDataset, BaseDataLoader
-from asu.configs.paprika import PaprikaConfig
-from asu.models.paprika.builder import Builder
+from configs.paprika import PaprikaConfig
+from models.paprika.builder import Builder
+
+from .main import BaseDataLoader, BaseDataset
 
 
 class PaprikaNissanDataset(BaseDataset):

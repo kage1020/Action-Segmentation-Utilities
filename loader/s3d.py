@@ -1,10 +1,12 @@
 from pathlib import Path
-from PIL import Image
-import torch
-from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
 
-from base.main import Base
+import torch
+import torchvision.transforms as transforms
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
+
+from base import get_boundaries, get_dirs
+from logger import log
 
 
 class ImageBatch(Dataset):
@@ -65,16 +67,16 @@ class S3DDataset(Dataset):
     ):
         super().__init__()
         self.image_dir = Path(image_dir)
-        Base.info(f"Loading images from {self.image_dir} ...", end="")
-        image_dirs = Base.get_dirs(image_dir, recursive=True)
-        Base.info("Done")
+        log(f"Loading images from {self.image_dir} ...", end="")
+        image_dirs = get_dirs(image_dir, recursive=True)
+        log("Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window
         self.num_workers = num_workers
         self.boundaries = []
         if boundary_dir is not None:
-            boundaries = list(Base.get_boundaries(boundary_dir).items())
+            boundaries = list(get_boundaries(boundary_dir).items())
             for video_name, boundary in boundaries:
                 self.boundaries.extend([(video_name, b) for b in boundary])
 

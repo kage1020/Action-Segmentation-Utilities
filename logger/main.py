@@ -1,13 +1,6 @@
-from logging import (
-    getLogger,
-    StreamHandler,
-    Formatter,
-    INFO,
-    WARNING,
-    ERROR,
-)
-from pprint import pformat
 from dataclasses import dataclass
+from logging import ERROR, INFO, WARNING, Formatter, StreamHandler, getLogger
+from pprint import pformat
 from sys import stdout
 
 
@@ -47,6 +40,34 @@ class ColorStreamHandler(StreamHandler):
         self.setFormatter(formatter)
 
 
+def log(
+    message: str | dict | list | object,
+    level: str = "info",
+    prefix: str = "",
+    end: str = "\n",
+):
+    if level == "info":
+        print(
+            prefix + Color.GREEN + pformat(message, width=100)[1:-1] + Color.RESET,
+            end=end,
+        )
+    elif level == "warning":
+        print(
+            prefix + Color.YELLOW + pformat(message, width=100)[1:-1] + Color.RESET,
+            end=end,
+        )
+    elif level == "error":
+        print(
+            prefix + Color.RED + pformat(message, width=100)[1:-1] + Color.RESET,
+            end=end,
+        )
+
+
+def clear():
+    stdout.write("\033[K")
+    stdout.flush()
+
+
 class Logger:
     def __init__(
         self,
@@ -63,34 +84,6 @@ class Logger:
             if not getattr(h, "stream", None) == stdout
         ]
         self.width = width
-
-    @staticmethod
-    def log(
-        message: str | dict | list | object,
-        level: str = "info",
-        prefix: str = "",
-        end: str = "\n",
-    ):
-        if level == "info":
-            print(
-                prefix + Color.GREEN + pformat(message, width=100)[1:-1] + Color.RESET,
-                end=end,
-            )
-        elif level == "warning":
-            print(
-                prefix + Color.YELLOW + pformat(message, width=100)[1:-1] + Color.RESET,
-                end=end,
-            )
-        elif level == "error":
-            print(
-                prefix + Color.RED + pformat(message, width=100)[1:-1] + Color.RESET,
-                end=end,
-            )
-
-    @staticmethod
-    def clear():
-        stdout.write("\033[K")
-        stdout.flush()
 
     def info(
         self, message: str | dict | list | object, prefix: str = "", end: str = "\n"
@@ -115,3 +108,7 @@ class Logger:
             pformat(message, width=self.width)[1:-1],
             extra={"prefix": prefix, "suffix": end},
         )
+
+    def clear(self):
+        stdout.write("\033[K")
+        stdout.flush()

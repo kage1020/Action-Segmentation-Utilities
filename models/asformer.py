@@ -1,10 +1,11 @@
+import math
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
-import math
-from copy import deepcopy
 from einops import rearrange
+from torch import Tensor
 
 
 class PositionalEncoding(nn.Module):

@@ -1,18 +1,19 @@
-import pickle
 import json
+import pickle
 import random
-from pathlib import Path
 from collections import defaultdict
-import polars as pl
+from pathlib import Path
+
 import numpy as np
-from tqdm import tqdm
-from sklearn.cluster import AgglomerativeClustering
-from scipy.sparse import csr_matrix
+import polars as pl
 import torch
 import torch.nn.functional as F
+from scipy.sparse import csr_matrix
+from sklearn.cluster import AgglomerativeClustering
+from tqdm import tqdm
 
-from base.main import Base
-from configs.paprika import PaprikaConfig, PaprikaPseudoConfig, PaprikaDownstreamConfig
+from base import Base
+from configs.paprika import PaprikaConfig, PaprikaDownstreamConfig, PaprikaPseudoConfig
 
 
 class Builder(Base):
@@ -142,8 +143,15 @@ class Builder(Base):
                     / self.cfg.dataset.name
                     / self.cfg.dataset.feature_dir
                     / f"{v}.npy"
-                )
+                ).T
                 # feature shape: (num_clips, num_subclips, embedding_dim)
+                if len(feature.shape) == 2:
+                    feature = feature[
+                        : feature.shape[0] // int(3 * 3.2 * 25) * int(3 * 3.2 * 25)
+                    ]
+                    feature = feature.reshape(
+                        (-1, int(3 * 3.2 * 25), feature.shape[-1])
+                    )
 
                 for c_idx in range(feature.shape[0]):
                     frame_embeddings.append(np.float64(np.mean(feature[c_idx], axis=0)))
@@ -181,7 +189,7 @@ class Builder(Base):
                 # dot product as similarity score
                 sim_scores = np.einsum(
                     "ij,ij->i",
-                    step_des_feats,
+                    step_des_feats,  # (10588, 512)
                     segment_video_embeddings[segment_id][np.newaxis, ...],
                 )
 
@@ -428,14 +436,14 @@ class Builder(Base):
 
         for step_id in tqdm(range(len(step2node))):
             for direct_outstep_id in G_wikihow[step_id].indices:
-                conf: float = G_wikihow[step_id, direct_outstep_id]  # type: ignore
+                conf: float = G_wikihow[step_id, direct_outstep_id]
                 node_id = step2node[step_id]
                 direct_outnode_id = step2node[direct_outstep_id]
                 candidates[(node_id, direct_outnode_id)].append(conf)
 
         for step_id in tqdm(range(len(step2node))):
             for direct_outstep_id in G_howto100m[step_id].indices:
-                conf = G_howto100m[step_id, direct_outstep_id]  # type: ignore
+                conf = G_howto100m[step_id, direct_outstep_id]
                 node_id = step2node[step_id]
                 direct_outnode_id = step2node[direct_outstep_id]
                 candidates[(node_id, direct_outnode_id)].append(conf)
@@ -531,7 +539,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VNM, f)
 
-        return pseudo_label_VNM  # type: ignore
+        return pseudo_label_VNM
 
     def obtain_document_step_task_occurrence(self):
         document_dir = Path(self.cfg.dataset.base_dir) / self.cfg.document.name
@@ -810,7 +818,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_VTM, f)
 
-        return pseudo_label_VTM  # type: ignore
+        return pseudo_label_VTM
 
     def get_pseudo_label_TCL_for_one_segment(
         self,
@@ -942,7 +950,7 @@ class Builder(Base):
             with open(sample_pseudo_label_savepath, "wb") as f:
                 pickle.dump(pseudo_label_TCL, f)
 
-        return pseudo_label_TCL  # type: ignore
+        return pseudo_label_TCL
 
     def get_pseudo_label_NRL_for_one_segment(
         self,
@@ -1060,7 +1068,7 @@ class Builder(Base):
                 with open(sample_pseudo_label_savepath, "wb") as f:
                     pickle.dump(pseudo_label_NRL, f)
 
-        return pseudo_label_NRL  # type: ignore
+        return pseudo_label_NRL
 
     def gather_all_narration_MPNet_embeddings(self):
         videos = self.get_all_video_ids()

@@ -1,8 +1,6 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
-
-from torch import Tensor
+from torch import Tensor, nn
 
 
 class BasicConv3d(nn.Module):

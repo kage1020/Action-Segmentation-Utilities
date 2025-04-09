@@ -1,15 +1,17 @@
 import os
-import ffmpeg
 from pathlib import Path
-from tqdm import tqdm
+
+import ffmpeg
 import numpy as np
 import torch
+from tqdm import tqdm
 
-from base.main import Base
+from base import Base, get_device
 from loader.i3d import I3DDataLoader
 from loader.s3d import S3DDataLoader
-from extractor.models.i3d import I3D
-from extractor.models.s3d_howto100m import S3D
+
+from .models.i3d import I3D
+from .models.s3d_howto100m import S3D
 
 # TODO: support for trimmed video
 
@@ -61,8 +63,8 @@ class Extractor(Base):
                     continue
                 features = []
                 for rgb, flows in tqdm(batch, leave=False):
-                    rgb = rgb.to(Base.get_device())
-                    flows = flows.to(Base.get_device())
+                    rgb = rgb.to(get_device())
+                    flows = flows.to(get_device())
                     rgb_features = rgb_model.extract_features(rgb[0])
                     flows_features = flow_model.extract_features(flows[0])
                     features.append(
@@ -91,7 +93,7 @@ class Extractor(Base):
                     continue
                 features = []
                 for batch in tqdm(rgb, leave=False):
-                    batch = batch.to(Base.get_device())
+                    batch = batch.to(get_device())
                     rgb_features = model(batch[0])["video_embedding"]
                     features.append(rgb_features.cpu().numpy())
 

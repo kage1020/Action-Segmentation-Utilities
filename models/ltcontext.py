@@ -1,12 +1,12 @@
-from functools import partial
 import math
+from functools import partial
+
 import torch
 import torch.nn as nn
-from torch.nn.init import constant_
 import torch.nn.functional as F
 from einops import rearrange
-
 from torch import Tensor
+from torch.nn.init import constant_
 
 
 class ScaledDotProduct(nn.Module):

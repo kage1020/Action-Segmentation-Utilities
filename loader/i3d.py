@@ -1,14 +1,15 @@
-from pathlib import Path
 import threading
+from pathlib import Path
+
 import cv2
 import numpy as np
-from PIL import Image
 import torch
-from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
-from base.main import Base
-from logger.main import Logger
+from PIL import Image
+from torch.utils.data import DataLoader, Dataset
 
+from base import Base, get_boundaries, get_dirs
+from logger import Logger, log
 
 worker_info = threading.local()
 
@@ -112,8 +113,8 @@ class I3DDataset(Dataset):
         super().__init__()
         self.image_dir = Path(image_dir)
         logger.info(f"Loading images from {self.image_dir} ...", end="")
-        image_dirs = Base.get_dirs(image_dir, recursive=True)
-        Base.info("Done")
+        image_dirs = get_dirs(image_dir, recursive=True)
+        log("Done")
         image_dirs.sort()
         self.image_dirs = image_dirs
         self.temporal_window = temporal_window
@@ -121,7 +122,7 @@ class I3DDataset(Dataset):
         self.boundary_list: list[tuple[str, tuple[int, int]]] = []
         self.boundary_dict: dict[str, list[tuple[int, int]]] = {}
         if boundary_dir is not None:
-            boundary_list = list(Base.get_boundaries(boundary_dir).items())
+            boundary_list = list(get_boundaries(boundary_dir).items())
             for video_name, boundaries in boundary_list:
                 self.boundary_list.extend([(video_name, b) for b in boundaries])
                 self.boundary_dict[video_name] = boundaries

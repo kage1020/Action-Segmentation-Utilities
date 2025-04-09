@@ -1,21 +1,227 @@
-from pathlib import Path
-from tqdm import tqdm
-import cv2
 import math
-import numpy as np
+from pathlib import Path
+
+import cv2
 import matplotlib
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
-from sklearn.metrics import roc_curve, RocCurveDisplay
-
-from base.main import Base
-from .palette import template
-from .writer import VideoWriter
-from .reader import VideoReader
-
-from torch import Tensor
-from numpy import ndarray
+import numpy as np
 from matplotlib.axes import Axes
+from numpy import ndarray
+from sklearn.manifold import TSNE
+from sklearn.metrics import RocCurveDisplay, roc_curve
+from torch import Tensor
+from tqdm import tqdm
+
+from base.main import Base, mask_label_with_backgrounds, to_segments, unique
+
+from .palette import template
+from .reader import VideoReader
+from .writer import VideoWriter
+
+
+def plot_image(
+    feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
+):
+    assert isinstance(feature, ndarray), "Feature must be a numpy array"
+    assert len(feature.shape) == 3, "Feature must be a 3D array"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.imshow(feature)
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+    if is_jupyter:
+        matplotlib.use("nbAgg")
+        fig.show()
+        return fig
+    else:
+        matplotlib.use("Agg")
+        fig.savefig(file_path)
+    plt.close(fig)
+
+
+def plot_feature(
+    feature: ndarray,
+    file_path: str = "feature.png",
+    is_jupyter: bool = False,
+    cmap: str = "viridis",
+):
+    assert isinstance(feature, ndarray), "Feature must be a numpy array"
+    assert len(feature.shape) == 2, "Feature must be a 2D array"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
+    fig.colorbar(axfig, ax=ax)
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+    if is_jupyter:
+        matplotlib.use("nbAgg")
+        fig.show()
+        return fig
+    else:
+        matplotlib.use("Agg")
+        fig.savefig(file_path)
+    plt.close(fig)
+
+
+def plot_features(
+    features: list[ndarray] | ndarray,
+    file_paths: list[str] = [],
+    is_jupyter: bool = False,
+    ncols: int = None,
+    nrows: int = None,
+    cmap: str = "viridis",
+):
+    assert isinstance(features, list) or isinstance(
+        features, ndarray
+    ), "Features must be a list or a numpy array"
+    if isinstance(features, ndarray):
+        assert len(features.shape) == 3, "ndarray features must be a 3D array"
+        assert len(features) == len(
+            file_paths
+        ), "Length of features and file_paths must be the same"
+
+    num_features = len(features)
+    nrows = math.floor(math.sqrt(num_features)) if nrows is None else nrows
+    ncols = math.ceil(num_features / nrows) if ncols is None else ncols
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=(ncols * 6, nrows * 5), tight_layout=True
+    )
+    axes = axes.flatten()
+
+    for ax, feature in zip(axes, features):
+        axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
+        fig.colorbar(axfig, ax=ax)
+
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05, wspace=0.3)
+
+    if is_jupyter:
+        matplotlib.use("nbAgg")
+        fig.show()
+        return fig
+    else:
+        matplotlib.use("Agg")
+        fig.savefig(file_paths[0])
+
+    plt.close(fig)
+
+
+def plot_tsne(
+    feature: ndarray,
+    gt: list[int] | None = None,
+    file_path: str | Path = "tsne.png",
+    is_jupyter: bool = False,
+    frame_index: bool = False,
+):
+    """
+    feature: 2D array of shape (n_frames, n_features)
+    """
+    assert isinstance(feature, ndarray) or isinstance(
+        feature, Tensor
+    ), "Feature must be a numpy array or a torch tensor"
+    assert len(feature.shape) == 2, "Feature must be a 2D array"
+    assert len(feature) == len(gt), "Length of feature and gt must be the same"
+
+    tsne = TSNE(n_components=2, random_state=0)
+    results = tsne.fit_transform(feature)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    axfig = ax.scatter(results[:, 0], results[:, 1], c=gt)
+    fig.colorbar(axfig, ax=ax)
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+    if is_jupyter:
+        matplotlib.use("nbAgg")
+        fig.show()
+    else:
+        matplotlib.use("Agg")
+        fig.savefig(file_path)
+    plt.close(fig)
+
+    if frame_index:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        axfig = ax.scatter(results[:, 0], results[:, 1], c=range(len(gt)))
+        fig.colorbar(axfig, ax=ax)
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
+        if is_jupyter:
+            matplotlib.use("nbAgg")
+            fig.show()
+        else:
+            matplotlib.use("Agg")
+            fig.savefig(str(file_path).replace(".png", "_frame_index.png"))
+        plt.close(fig)
+
+
+def plot_loss(
+    train_loss: list[tuple[int, float]] | None = None,
+    test_loss: list[tuple[int, float]] | None = None,
+    file_path: str = "loss.png",
+):
+    assert (
+        train_loss or test_loss
+    ), "Either `train_loss` or `test_loss` must be provided"
+    assert (
+        train_loss and len(train_loss[0]) == 2
+    ), "`train_loss` must be a list of tuples with epoch and loss"
+    assert (
+        test_loss and len(test_loss[0]) == 2
+    ), "`test_loss` must be a list of tuples with epoch and loss"
+
+    epochs = [x[0] for x in train_loss] if train_loss else [x[0] for x in test_loss]
+    train_values = [x[1] for x in train_loss] if train_loss else []
+    test_values = [x[1] for x in test_loss] if test_loss else []
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    if train_loss:
+        ax.plot(epochs, train_values, label="Train")
+    if test_loss:
+        ax.plot(epochs, test_values, label="Test")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    if train_loss and test_loss:
+        ax.legend()
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
+    fig.savefig(file_path)
+    plt.close(fig)
+
+
+def plot_metrics(
+    metrics_name: str,
+    x: list[int],
+    values: list[float],
+    file_path: str = "metrics.png",
+):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x, values)
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel(metrics_name)
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
+    fig.savefig(file_path)
+    plt.close(fig)
+
+
+def plot_confidences(
+    confidences: ndarray, file_path: str = "confidences.png", axis: bool = True
+):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(confidences)
+    ax.set_ylim(bottom=0, top=1)
+    ax.set_xlabel("Frame")
+    ax.set_ylabel("Confidence")
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
+    if not axis:
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+        canvas = FigureCanvasAgg(fig)
+        canvas.draw()
+        data = np.array(canvas.buffer_rgba(), dtype="uint8")[:, :, :3]
+        plt.close(fig)
+        return data
+    else:
+        fig.savefig(file_path)
+        plt.close(fig)
 
 
 class Visualizer(Base):
@@ -23,215 +229,6 @@ class Visualizer(Base):
 
     def __init__(self):
         super().__init__(name="Visualizer")
-
-    @staticmethod
-    def save_image(image: ndarray, file_path: str):
-        cv2.imwrite(file_path, image)
-
-    @staticmethod
-    def plot_image(
-        feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
-    ):
-        assert isinstance(feature, ndarray), "Feature must be a numpy array"
-        assert len(feature.shape) == 3, "Feature must be a 3D array"
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.imshow(feature)
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-        if is_jupyter:
-            matplotlib.use("nbAgg")
-            fig.show()
-            return fig
-        else:
-            matplotlib.use("Agg")
-            fig.savefig(file_path)
-        plt.close(fig)
-
-    @staticmethod
-    def plot_feature(
-        feature: ndarray,
-        file_path: str = "feature.png",
-        is_jupyter: bool = False,
-        cmap: str = "viridis",
-    ):
-        assert isinstance(feature, ndarray), "Feature must be a numpy array"
-        assert len(feature.shape) == 2, "Feature must be a 2D array"
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
-        fig.colorbar(axfig, ax=ax)
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-        if is_jupyter:
-            matplotlib.use("nbAgg")
-            fig.show()
-            return fig
-        else:
-            matplotlib.use("Agg")
-            fig.savefig(file_path)
-        plt.close(fig)
-
-    @staticmethod
-    def plot_features(
-        features: list[ndarray] | ndarray,
-        file_paths: list[str] = [],
-        is_jupyter: bool = False,
-        ncols: int = None,
-        nrows: int = None,
-        cmap: str = "viridis",
-    ):
-        assert isinstance(features, list) or isinstance(
-            features, ndarray
-        ), "Features must be a list or a numpy array"
-        if isinstance(features, ndarray):
-            assert len(features.shape) == 3, "ndarray features must be a 3D array"
-            assert len(features) == len(
-                file_paths
-            ), "Length of features and file_paths must be the same"
-
-        num_features = len(features)
-        nrows = math.floor(math.sqrt(num_features)) if nrows is None else nrows
-        ncols = math.ceil(num_features / nrows) if ncols is None else ncols
-        fig, axes = plt.subplots(
-            nrows, ncols, figsize=(ncols * 6, nrows * 5), tight_layout=True
-        )
-        axes = axes.flatten()
-
-        for ax, feature in zip(axes, features):
-            axfig = ax.imshow(feature, aspect="auto", interpolation="none", cmap=cmap)
-            fig.colorbar(axfig, ax=ax)
-
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05, wspace=0.3)
-
-        if is_jupyter:
-            matplotlib.use("nbAgg")
-            fig.show()
-            return fig
-        else:
-            matplotlib.use("Agg")
-            fig.savefig(file_paths[0])
-
-        plt.close(fig)
-
-    @staticmethod
-    def plot_tsne(
-        feature: ndarray,
-        gt: list[int] | None = None,
-        file_path: str | Path = "tsne.png",
-        is_jupyter: bool = False,
-        frame_index: bool = False,
-    ):
-        """
-        feature: 2D array of shape (n_frames, n_features)
-        """
-        assert isinstance(feature, ndarray) or isinstance(
-            feature, Tensor
-        ), "Feature must be a numpy array or a torch tensor"
-        assert len(feature.shape) == 2, "Feature must be a 2D array"
-        assert len(feature) == len(gt), "Length of feature and gt must be the same"
-
-        tsne = TSNE(n_components=2, random_state=0)
-        results = tsne.fit_transform(feature)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        axfig = ax.scatter(results[:, 0], results[:, 1], c=gt)
-        fig.colorbar(axfig, ax=ax)
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-        if is_jupyter:
-            matplotlib.use("nbAgg")
-            fig.show()
-        else:
-            matplotlib.use("Agg")
-            fig.savefig(file_path)
-        plt.close(fig)
-
-        if frame_index:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            axfig = ax.scatter(results[:, 0], results[:, 1], c=range(len(gt)))
-            fig.colorbar(axfig, ax=ax)
-            fig.subplots_adjust(left=0.1, right=0.95, top=0.98, bottom=0.05)
-            if is_jupyter:
-                matplotlib.use("nbAgg")
-                fig.show()
-            else:
-                matplotlib.use("Agg")
-                fig.savefig(str(file_path).replace(".png", "_frame_index.png"))
-            plt.close(fig)
-
-    @staticmethod
-    def plot_loss(
-        train_loss: list[tuple[int, float]] | None = None,
-        test_loss: list[tuple[int, float]] | None = None,
-        file_path: str = "loss.png",
-    ):
-        assert (
-            train_loss or test_loss
-        ), "Either `train_loss` or `test_loss` must be provided"
-        assert (
-            train_loss and len(train_loss[0]) == 2
-        ), "`train_loss` must be a list of tuples with epoch and loss"
-        assert (
-            test_loss and len(test_loss[0]) == 2
-        ), "`test_loss` must be a list of tuples with epoch and loss"
-
-        epochs = [x[0] for x in train_loss] if train_loss else [x[0] for x in test_loss]
-        train_values = [x[1] for x in train_loss] if train_loss else []
-        test_values = [x[1] for x in test_loss] if test_loss else []
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        if train_loss:
-            ax.plot(epochs, train_values, label="Train")
-        if test_loss:
-            ax.plot(epochs, test_values, label="Test")
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel("Loss")
-        if train_loss and test_loss:
-            ax.legend()
-        fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
-        fig.savefig(file_path)
-        plt.close(fig)
-
-    @staticmethod
-    def plot_metrics(
-        metrics_name: str,
-        x: list[int],
-        values: list[float],
-        file_path: str = "metrics.png",
-    ):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(x, values)
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel(metrics_name)
-        fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
-        fig.savefig(file_path)
-        plt.close(fig)
-
-    @staticmethod
-    def plot_confidences(
-        confidences: ndarray, file_path: str = "confidences.png", axis: bool = True
-    ):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(confidences)
-        ax.set_ylim(bottom=0, top=1)
-        ax.set_xlabel("Frame")
-        ax.set_ylabel("Confidence")
-        fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.05)
-        if not axis:
-            from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-            canvas = FigureCanvasAgg(fig)
-            canvas.draw()
-            data = np.array(canvas.buffer_rgba(), dtype="uint8")[:, :, :3]
-            plt.close(fig)
-            return data
-        else:
-            fig.savefig(file_path)
-            plt.close(fig)
 
     @staticmethod
     def plot_action_segmentation(
@@ -257,23 +254,23 @@ class Visualizer(Base):
         pred_segments = []
         gt_segments = []
         if pred is not None and gt is None:
-            _pred = Visualizer.mask_label_with_backgrounds(pred, backgrounds)
-            pred_segments = Visualizer.to_segments(_pred)
-            unique_label = Visualizer.unique([x[0] for x in pred_segments])
+            _pred = mask_label_with_backgrounds(pred, backgrounds)
+            pred_segments = to_segments(_pred)
+            unique_label = unique([x[0] for x in pred_segments])
             max_num_segments = len(pred_segments)
             fig_size = (10, 3)
         elif pred is None and gt is not None:
-            _gt = Visualizer.mask_label_with_backgrounds(gt, backgrounds)
-            gt_segments = Visualizer.to_segments(_gt)
-            unique_label = Visualizer.unique([x[0] for x in gt_segments])
+            _gt = mask_label_with_backgrounds(gt, backgrounds)
+            gt_segments = to_segments(_gt)
+            unique_label = unique([x[0] for x in gt_segments])
             max_num_segments = len(gt_segments)
             fig_size = (10, 3)
         elif pred is not None and gt is not None:
-            _pred = Visualizer.mask_label_with_backgrounds(pred, backgrounds)
-            pred_segments = Visualizer.to_segments(_pred)
-            _gt = Visualizer.mask_label_with_backgrounds(gt, backgrounds)
-            gt_segments = Visualizer.to_segments(_gt)
-            unique_label = Visualizer.unique(
+            _pred = mask_label_with_backgrounds(pred, backgrounds)
+            pred_segments = to_segments(_pred)
+            _gt = mask_label_with_backgrounds(gt, backgrounds)
+            gt_segments = to_segments(_gt)
+            unique_label = unique(
                 [x[0] for x in gt_segments] + [x[0] for x in pred_segments]
             )
             max_num_segments = max(len(pred_segments), len(gt_segments))
@@ -288,7 +285,7 @@ class Visualizer(Base):
         gs = fig.add_gridspec(3, 1)
         acc = [0, 0]  # [Pred, GT]
 
-        bar_ax: Axes = None  # type: ignore
+        bar_ax: Axes = None
         legend_anchor = (0.5, -0.5)
         if (pred is None or gt is None) and confidences is None:
             fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.5)
@@ -303,7 +300,7 @@ class Visualizer(Base):
         elif (pred is not None and gt is not None) and confidences is not None:
             fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0.2)
             bar_ax = fig.add_subplot(gs[0:2])
-            legend_anchor = (0.4, -0.7)
+            legend_anchor = (0.5, -0.7)
 
         if palette is None:
             palette = template(num_classes, "cividis")
@@ -440,8 +437,8 @@ class Visualizer(Base):
             segmentation = cv2.resize(
                 segmentation,
                 None,
-                fx=video_size[1] / segmentation.shape[1],  # type: ignore
-                fy=video_size[1] / segmentation.shape[1],  # type: ignore
+                fx=video_size[1] / segmentation.shape[1],
+                fy=video_size[1] / segmentation.shape[1],
             )
             video_size = (video_size[0] + segmentation.shape[0], video_size[1])
             bar_width = max(5, int(segmentation.shape[1] * 0.005))
@@ -456,15 +453,15 @@ class Visualizer(Base):
         ) as writer:
             for i, image in enumerate(tqdm(reader, total=reader.num_frames)):
                 if show_segment:
-                    seg = segmentation.copy()  # type: ignore
+                    seg = segmentation.copy()
                     segment_offset = 90
                     bar_left_pos = segment_offset + int(
                         i
                         / reader.num_frames
-                        * (seg.shape[1] - segment_offset * 2 - bar_width)  # type: ignore
+                        * (seg.shape[1] - segment_offset * 2 - bar_width)
                     )
                     bar_start = bar_left_pos
-                    bar_end = bar_left_pos + bar_width  # type: ignore
+                    bar_end = bar_left_pos + bar_width
                     seg[55 : seg.shape[0] // 2, bar_start:bar_end] = 250
                     image = np.concatenate([image, seg], axis=0)
                 if show_label:
@@ -526,9 +523,6 @@ class Visualizer(Base):
 
                 writer.update(image)
 
-    def init(self):
-        pass
-
     def add_metrics(self, epoch: int, metrics: dict[str, float]):
         for key, value in metrics.items():
             if key not in self.metrics:
@@ -540,4 +534,4 @@ class Visualizer(Base):
         for key, values in self.metrics.items():
             epochs = [x[0] for x in values]
             metrics = [x[1] for x in values]
-            self.plot_metrics(key, epochs, metrics, f"{save_dir}/{key}.png")
+            plot_metrics(key, epochs, metrics, f"{save_dir}/{key}.png")

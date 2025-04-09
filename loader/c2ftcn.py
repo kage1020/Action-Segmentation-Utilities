@@ -1,9 +1,11 @@
 from pathlib import Path
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from asu.base.main import Config
+from configs import Config
+
 from .main import BaseDataset
 
 

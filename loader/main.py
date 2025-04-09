@@ -1,12 +1,14 @@
 import os
 from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-
 from torch.nn import Module
-from base.main import Base, Config
+from torch.utils.data import DataLoader, Dataset
+
+from base import Base
+from configs import Config
 
 
 class NoopDataset(Dataset):

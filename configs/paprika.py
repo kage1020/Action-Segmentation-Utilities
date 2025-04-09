@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+
 from omegaconf import DictConfig
 
-from configs.base import Config, DatasetConfig
+from .base import Config, DatasetConfig
 
 
 @dataclass

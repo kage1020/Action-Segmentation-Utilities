@@ -1,8 +1,7 @@
 import hydra
 
-from base.main import Base
-from configs.base import Config
-
+from base import validate_config
+from configs import Config
 
 # FIXME: This class can't use in other files
 # @hydra.main searches config files from here(asu.manager.config...).
@@ -20,7 +19,7 @@ class HydraManager:
             version_base=None,
         )
         def wrapper(cfg: Config):
-            is_valid = Base.validate_config(cfg)
+            is_valid = validate_config(cfg)
             if not is_valid:
                 raise ValueError("Invalid configuration")
 

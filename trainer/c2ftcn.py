@@ -1,17 +1,19 @@
 import os
+
 import numpy as np
 import torch
-from torch import Tensor
-from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch import Tensor
+from torch.nn import CrossEntropyLoss, Module, MSELoss
+from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 
-from base.main import Config, Base
-from loader.c2ftcn import C2FTCNBreakfastDataLoader
-from evaluator.main import Evaluator
+from base.main import Config, load_best_model, save_model
 from configs.c2ftcn import C2FTCNConfig
+from evaluator.main import Evaluator
+from loader.c2ftcn import C2FTCNBreakfastDataLoader
+
 from .main import Trainer
 
 
@@ -405,7 +407,7 @@ class C2FTCNTrainer(Trainer):
             )
 
             if (epoch + 1) % (self.cfg.epochs // 10) == 0:
-                Base.save_model(
+                save_model(
                     self.model,
                     f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch-{epoch+1}.model",
                 )
@@ -414,7 +416,7 @@ class C2FTCNTrainer(Trainer):
                 self.best_acc = acc
                 self.best_edit = edit
                 self.best_f1 = f1
-                Base.save_model(
+                save_model(
                     self.model,
                     f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best.model",
                 )
@@ -501,7 +503,7 @@ class C2FTCNTrainer(Trainer):
         for iter_n in range(self.cfg.start_iter, self.cfg.num_iter + 1):
             self.train_supervised(train_loader, test_loader)
 
-            self.model = Base.load_best_model(
+            self.model = load_best_model(
                 self.model,
                 f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models",
                 self.device,

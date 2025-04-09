@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from base.main import Base
+from base.main import get_image_paths, load_image
 
 
 class VideoReader:
@@ -21,12 +21,12 @@ class VideoReader:
         self.index = 0
 
         if image_dir is not None:
-            self.image_paths = Base.get_image_paths(image_dir)
+            self.image_paths = get_image_paths(image_dir)
             self.num_frames = len(self.image_paths)
-            self.image_size = Base.load_image(self.image_paths[0]).shape
+            self.image_size = load_image(self.image_paths[0]).shape
         elif images is not None and isinstance(images[0], str):
             self.num_frames = len(images)
-            self.image_size = Base.load_image(images[0]).shape
+            self.image_size = load_image(images[0]).shape
         elif images is not None and isinstance(images[0], np.ndarray):
             self.num_frames = len(images)
             self.image_size = images[0].shape
@@ -47,11 +47,11 @@ class VideoReader:
 
         if self.image_dir is not None:
             self.index += 1
-            return Base.load_image(self.image_paths[self.index - 1])
+            return load_image(self.image_paths[self.index - 1])
         elif self.images is not None:
             self.index += 1
             image = self.images[self.index - 1]
-            return Base.load_image(image) if isinstance(image, str) else image
+            return load_image(image) if isinstance(image, str) else image
         elif self.video_path is not None:
             while True:
                 ret, frame = self.cap.read()

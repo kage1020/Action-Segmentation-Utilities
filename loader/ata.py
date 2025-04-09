@@ -1,7 +1,8 @@
 from torch.utils.data import DataLoader
 
-from configs.base import Config
-from .main import BaseDataset, BaseDataLoader
+from configs import Config
+
+from .main import BaseDataLoader, BaseDataset
 
 
 class AnomalousToyAssemblyDataset(BaseDataset):

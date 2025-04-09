@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from configs.base import Config
+from .base import Config
 
 
 @dataclass

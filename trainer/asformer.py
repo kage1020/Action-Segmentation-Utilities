@@ -1,19 +1,22 @@
 from typing import Literal
-from einops import rearrange
-from tqdm import tqdm
+
 import torch
-from torch import Tensor
-from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
+from einops import rearrange
+from torch import Tensor
+from torch.nn import CrossEntropyLoss, Module, MSELoss
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
+from base.main import save_labels, save_np
+from configs.asformer import ASFormerConfig
+from evaluator import Evaluator
 from loader.main import BaseDataLoader
 from visualizer.main import Visualizer
 from visualizer.palette import template
-from evaluator.main import Evaluator
-from configs.asformer import ASFormerConfig
+
 from .main import Trainer
 
 
@@ -119,7 +122,7 @@ class ASFormerTrainer(Trainer):
                     f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
-            acc, edit, f1 = self.train_evaluator.get()  # type: ignore
+            acc, edit, f1 = self.train_evaluator.get()
             self.logger.info(
                 f"Epoch {epoch+1:03d} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
@@ -167,7 +170,7 @@ class ASFormerTrainer(Trainer):
                 self.test_evaluator.add(
                     labels[0].cpu().numpy(), pred.cpu().detach().numpy()
                 )
-                self.test_evaluator.save_labels(
+                save_labels(
                     list(
                         map(
                             test_loader.dataset.int_to_text.get,
@@ -175,6 +178,10 @@ class ASFormerTrainer(Trainer):
                         )
                     ),
                     f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.txt",
+                )
+                save_np(
+                    outputs[-1][0].cpu().detach().numpy(),
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}_matrix.npy",
                 )
                 self.visualizer.plot_action_segmentation(
                     pred.cpu().detach().numpy(),
@@ -184,7 +191,7 @@ class ASFormerTrainer(Trainer):
                     file_path=f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.png",
                     palette=palette,
                 )
-            acc, edit, f1 = self.test_evaluator.get()  # type: ignore
+            acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
                 f"F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}"
             )

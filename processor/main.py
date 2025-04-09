@@ -1,10 +1,22 @@
 from collections import OrderedDict
 from pathlib import Path
-from tqdm import tqdm
-from sklearn.model_selection import KFold
-import numpy as np
 
-from base.main import Base, Config
+import numpy as np
+from sklearn.model_selection import KFold
+from tqdm import tqdm
+
+from base.main import (
+    Base,
+    Config,
+    get_action_matching,
+    get_actions,
+    get_class_mapping,
+    get_gt,
+    init_seed,
+    load_file,
+    save_file,
+)
+from logger.main import log
 
 
 class Processor(Base):
@@ -13,11 +25,11 @@ class Processor(Base):
 
     @staticmethod
     def shuffle_split(cfg: Config):
-        Base.init_seed(cfg.seed)
-        text_to_int, _ = Base.get_class_mapping(
+        init_seed(cfg.seed)
+        text_to_int, _ = get_class_mapping(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/mapping.txt"
         )
-        actions = Base.get_actions(
+        actions = get_actions(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/actions.txt",
             text_to_int=text_to_int,
         )
@@ -28,7 +40,7 @@ class Processor(Base):
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}"
         )
         split_dir.mkdir(parents=True, exist_ok=True)
-        matching = Base.get_action_matching(
+        matching = get_action_matching(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/matching.txt"
         )
         gt_dir = Path(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}")
@@ -50,8 +62,9 @@ class Processor(Base):
 
             files.sort()
             if len(files) < cfg.dataset.num_fold:
-                Base.warning(
-                    f"Action {action} has less than {cfg.dataset.num_fold} files"
+                log(
+                    f"Action {action} has less than {cfg.dataset.num_fold} files",
+                    level="warning",
                 )
                 continue
 
@@ -83,13 +96,13 @@ class Processor(Base):
 
     @staticmethod
     def analytics_split(cfg: Config):
-        text_to_int, int_to_text = Base.get_class_mapping(
+        text_to_int, int_to_text = get_class_mapping(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/mapping.txt"
         )
         split_dir = Path(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.split_dir}"
         )
-        matching = Base.get_action_matching(
+        matching = get_action_matching(
             f"{cfg.dataset.base_dir}/{cfg.dataset.name}/matching.txt"
         )
         gt_dir = Path(f"{cfg.dataset.base_dir}/{cfg.dataset.name}/{cfg.dataset.gt_dir}")
@@ -102,17 +115,15 @@ class Processor(Base):
         semi_per = cfg.dataset.semi_per or 1.0
         split_files = [f for f in split_files if f"{semi_per:.2f}" in f.name]
         for split_file in split_files:
-            gt_paths = Base.load_file(split_file)
+            gt_paths = load_file(split_file)
             train_files = [f for f in gt_paths if f in matching.keys()]
             test_files = [f for f in gt_paths if f not in matching.keys()]
 
             train_gts = [
-                Base.get_gt(str(gt_dir / f), text_to_int=text_to_int)
-                for f in train_files
+                get_gt(str(gt_dir / f), text_to_int=text_to_int) for f in train_files
             ]
             test_gts = [
-                Base.get_gt(str(gt_dir / f), text_to_int=text_to_int)
-                for f in test_files
+                get_gt(str(gt_dir / f), text_to_int=text_to_int) for f in test_files
             ]
             train_frames = sum(len(g) for g in train_gts)
             test_frames = sum(len(g) for g in test_gts)
@@ -199,7 +210,7 @@ class Processor(Base):
             class_stats[c]["train"]["time"] /= 25 * 60
             class_stats[c]["test"]["time"] /= 25 * 60
 
-        Base.save_file(
+        save_file(
             "data/nissan/analytics.md",
             [
                 "## Split stats",

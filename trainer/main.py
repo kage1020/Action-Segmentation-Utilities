@@ -1,10 +1,10 @@
 import os
+
 import torch
+from asu.base.main import Base, Config, init_seed
+from hydra.core.hydra_config import HydraConfig
 from torch.nn import Module
 from torch.optim.lr_scheduler import _LRScheduler
-from hydra.core.hydra_config import HydraConfig
-
-from asu.base.main import Base, Config
 
 
 class NoopLoss(Module):
@@ -40,7 +40,7 @@ class Trainer(Base):
         self.hydra_dir = HydraConfig.get().runtime.output_dir
 
         os.makedirs(f"{self.hydra_dir}/{cfg.result_dir}", exist_ok=True)
-        Base.init_seed(cfg.seed)
+        init_seed(cfg.seed)
 
     def train(self):
         raise NotImplementedError

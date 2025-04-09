@@ -17,12 +17,12 @@ optimization.
 """
 
 import re
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-
 from torch import Tensor
 
 
@@ -214,18 +214,18 @@ class STConv3D(nn.Module):
             self.conv1 = nn.Conv3d(
                 input_dim,
                 output_dim,
-                kernel_size=spatial_kernel_size,  # type: ignore
-                stride=spatial_stride,  # type: ignore
-                padding=spatial_padding,  # type: ignore
+                kernel_size=spatial_kernel_size,
+                stride=spatial_stride,
+                padding=spatial_padding,
                 bias=False,
             )
             self.bn1 = nn.BatchNorm3d(output_dim)
             self.conv2 = nn.Conv3d(
                 output_dim,
                 output_dim,
-                kernel_size=temporal_kernel_size,  # type: ignore
-                stride=temporal_stride,  # type: ignore
-                padding=temporal_padding,  # type: ignore
+                kernel_size=temporal_kernel_size,
+                stride=temporal_stride,
+                padding=temporal_padding,
                 bias=False,
             )
             self.bn2 = nn.BatchNorm3d(output_dim)

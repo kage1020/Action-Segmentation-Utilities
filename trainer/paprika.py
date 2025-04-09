@@ -1,15 +1,15 @@
 import math
-from torch.nn import Module, BCEWithLogitsLoss
+
+from torch import Tensor
+from torch.nn import BCEWithLogitsLoss, Module
 from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import LambdaLR
 from tqdm import tqdm
 
-from loader.main import BaseDataLoader
-from trainer.main import Trainer, NoopLoss, NoopScheduler
 from configs.paprika import PaprikaConfig, PaprikaPseudoConfig
+from loader.main import BaseDataLoader
+from trainer.main import NoopLoss, NoopScheduler, Trainer
 from visualizer.main import Visualizer
-
-from torch import Tensor
 
 
 class PaprikaCriterion(Module):

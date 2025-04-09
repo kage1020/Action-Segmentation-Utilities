@@ -1,20 +1,19 @@
-from einops import rearrange
-from tqdm import tqdm
 import torch
-from torch.optim.adam import Adam
-from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
-from torch.nn import Module, CrossEntropyLoss, MSELoss
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pad_sequence
-
-from base.main import Base
-from trainer.main import Trainer
-from evaluator.main import Evaluator
-from visualizer.main import Visualizer
-from loader.main import BaseDataLoader
-from configs.ltcontext import LTContextConfig
-
+from einops import rearrange
 from torch import Tensor
+from torch.nn import CrossEntropyLoss, Module, MSELoss
+from torch.nn.utils.rnn import pad_sequence
+from torch.optim.adam import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from tqdm import tqdm
+
+from base.main import to_class_index
+from configs.ltcontext import LTContextConfig
+from evaluator.main import Evaluator
+from loader.main import BaseDataLoader
+from trainer.main import Trainer
+from visualizer.main import Visualizer
 
 
 class LTContextCriterion(Module):
@@ -145,7 +144,7 @@ class LTContextTrainer(Trainer):
                     f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
                 )
 
-            acc, edit, f1 = self.train_evaluator.get()  # type: ignore
+            acc, edit, f1 = self.train_evaluator.get()
             self.logger.info(
                 f"Epoch {epoch+1:03d} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
@@ -203,13 +202,13 @@ class LTContextTrainer(Trainer):
                         confidence.cpu().numpy(),
                         f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}.png",
                         int_to_text=test_loader.dataset.int_to_text,
-                        backgrounds=Base.to_class_index(
+                        backgrounds=to_class_index(
                             self.cfg.dataset.backgrounds,
                             test_loader.dataset.text_to_int,
                         ),
                     )
 
-            acc, edit, f1 = self.test_evaluator.get()  # type: ignore
+            acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
                 f"Test | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
