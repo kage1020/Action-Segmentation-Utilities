@@ -1,10 +1,12 @@
 import os
 
 import torch
-from asu.base.main import Base, Config, init_seed
 from hydra.core.hydra_config import HydraConfig
 from torch.nn import Module
 from torch.optim.lr_scheduler import _LRScheduler
+
+from ..base import Base, init_seed
+from ..configs import Config
 
 
 class NoopLoss(Module):

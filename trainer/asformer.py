@@ -10,13 +10,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from base.main import save_labels, save_np
-from configs.asformer import ASFormerConfig
-from evaluator import Evaluator
-from loader.main import BaseDataLoader
-from visualizer.main import Visualizer
-from visualizer.palette import template
-
+from ..base import save_labels, save_np
+from ..configs import ASFormerConfig
+from ..evaluator import Evaluator
+from ..loader import BaseDataLoader
+from ..visualizer import Visualizer, template
 from .main import Trainer
 
 

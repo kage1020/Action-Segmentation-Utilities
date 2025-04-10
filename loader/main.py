@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 
-from base import Base
-from configs import Config
+from ..base import Base
+from ..configs import Config
 
 
 class NoopDataset(Dataset):

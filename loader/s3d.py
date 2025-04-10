@@ -5,8 +5,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from base import get_boundaries, get_dirs
-from logger import log
+from ..base import get_boundaries, get_dirs
+from ..logger import log
 
 
 class ImageBatch(Dataset):

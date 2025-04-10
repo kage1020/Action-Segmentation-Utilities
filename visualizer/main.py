@@ -12,8 +12,7 @@ from sklearn.metrics import RocCurveDisplay, roc_curve
 from torch import Tensor
 from tqdm import tqdm
 
-from base.main import Base, mask_label_with_backgrounds, to_segments, unique
-
+from ..base import Base, mask_label_with_backgrounds, to_segments, unique
 from .palette import template
 from .reader import VideoReader
 from .writer import VideoWriter

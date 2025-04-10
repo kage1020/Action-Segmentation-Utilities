@@ -12,8 +12,12 @@ from scipy.sparse import csr_matrix
 from sklearn.cluster import AgglomerativeClustering
 from tqdm import tqdm
 
-from base import Base
-from configs.paprika import PaprikaConfig, PaprikaDownstreamConfig, PaprikaPseudoConfig
+from ...base import Base
+from ...configs.paprika import (
+    PaprikaConfig,
+    PaprikaDownstreamConfig,
+    PaprikaPseudoConfig,
+)
 
 
 class Builder(Base):

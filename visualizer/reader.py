@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from base.main import get_image_paths, load_image
+from ..base import get_image_paths, load_image
 
 
 class VideoReader:

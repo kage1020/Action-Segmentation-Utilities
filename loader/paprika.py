@@ -4,9 +4,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from configs.paprika import PaprikaConfig
-from models.paprika.builder import Builder
-
+from ..configs.paprika import PaprikaConfig
+from ..models.paprika.builder import Builder
 from .main import BaseDataLoader, BaseDataset
 
 

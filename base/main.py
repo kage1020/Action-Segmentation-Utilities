@@ -13,8 +13,8 @@ from numpy import ndarray
 from torch import Tensor
 from torch.nn import Module
 
-from configs import Config
-from logger import Logger, log
+from ..configs import Config
+from ..logger import Logger, log
 
 load_dotenv()
 

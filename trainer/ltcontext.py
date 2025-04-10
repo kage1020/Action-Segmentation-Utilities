@@ -8,12 +8,12 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from tqdm import tqdm
 
-from base.main import to_class_index
-from configs.ltcontext import LTContextConfig
-from evaluator.main import Evaluator
-from loader.main import BaseDataLoader
-from trainer.main import Trainer
-from visualizer.main import Visualizer
+from ..base import to_class_index
+from ..configs import LTContextConfig
+from ..evaluator import Evaluator
+from ..loader import BaseDataLoader
+from ..visualizer import Visualizer
+from .main import Trainer
 
 
 class LTContextCriterion(Module):

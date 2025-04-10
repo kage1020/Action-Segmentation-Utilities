@@ -4,8 +4,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from configs import Config
-
+from ..configs import Config
 from .main import BaseDataset
 
 

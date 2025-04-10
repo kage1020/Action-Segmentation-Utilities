@@ -1,7 +1,7 @@
 import hydra
 
-from base import validate_config
-from configs import Config
+from ..base import validate_config
+from ..configs import Config
 
 # FIXME: This class can't use in other files
 # @hydra.main searches config files from here(asu.manager.config...).

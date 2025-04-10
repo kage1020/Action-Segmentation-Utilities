@@ -6,10 +6,9 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from base import Base, get_device
-from loader.i3d import I3DDataLoader
-from loader.s3d import S3DDataLoader
-
+from ..base import Base, get_device
+from ..loader.i3d import I3DDataLoader
+from ..loader.s3d import S3DDataLoader
 from .models.i3d import I3D
 from .models.s3d_howto100m import S3D
 

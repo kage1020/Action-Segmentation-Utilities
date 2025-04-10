@@ -8,8 +8,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from base import Base, get_boundaries, get_dirs
-from logger import Logger, log
+from ..base import Base, get_boundaries, get_dirs
+from ..logger import Logger, log
 
 worker_info = threading.local()
 

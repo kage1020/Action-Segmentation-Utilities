@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torch import Tensor
 
-from configs.paprika import PaprikaConfig
+from ...configs.paprika import PaprikaConfig
 
 
 class Adapter(nn.Module):

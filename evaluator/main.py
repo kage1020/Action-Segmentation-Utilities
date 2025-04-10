@@ -5,8 +5,8 @@ from numpy import ndarray
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
-from base import Base, to_np, to_segments
-from configs import Config
+from ..base import Base, to_np, to_segments
+from ..configs import Config
 
 
 def accuracy_frame(gt: list | ndarray | Tensor, pred: list | ndarray | Tensor) -> float:

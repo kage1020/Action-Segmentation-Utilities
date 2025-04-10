@@ -6,10 +6,10 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import LambdaLR
 from tqdm import tqdm
 
-from configs.paprika import PaprikaConfig, PaprikaPseudoConfig
-from loader.main import BaseDataLoader
-from trainer.main import NoopLoss, NoopScheduler, Trainer
-from visualizer.main import Visualizer
+from ..configs import PaprikaConfig, PaprikaPseudoConfig
+from ..loader import BaseDataLoader
+from ..trainer import NoopLoss, NoopScheduler, Trainer
+from ..visualizer import Visualizer
 
 
 class PaprikaCriterion(Module):

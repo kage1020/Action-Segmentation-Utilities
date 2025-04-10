@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.model_selection import KFold
 from tqdm import tqdm
 
-from base.main import (
+from ..base import (
     Base,
     Config,
     get_action_matching,
@@ -16,7 +16,7 @@ from base.main import (
     load_file,
     save_file,
 )
-from logger.main import log
+from ..logger import log
 
 
 class Processor(Base):

@@ -9,11 +9,10 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 
-from base.main import Config, load_best_model, save_model
-from configs.c2ftcn import C2FTCNConfig
-from evaluator.main import Evaluator
-from loader.c2ftcn import C2FTCNBreakfastDataLoader
-
+from ..base import load_best_model, save_model
+from ..configs import C2FTCNConfig, Config
+from ..evaluator import Evaluator
+from ..loader.c2ftcn import C2FTCNBreakfastDataLoader
 from .main import Trainer
 
 
