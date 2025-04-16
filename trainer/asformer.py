@@ -14,7 +14,7 @@ from ..base import save_labels, save_np
 from ..configs import ASFormerConfig
 from ..evaluator import Evaluator
 from ..loader import BaseDataLoader
-from ..visualizer import Visualizer, template
+from ..visualizer import Visualizer, plot_action_segmentation, template
 from .main import Trainer
 
 
@@ -117,7 +117,7 @@ class ASFormerTrainer(Trainer):
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch_{epoch+1}_split{self.cfg.dataset.split}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
@@ -179,15 +179,16 @@ class ASFormerTrainer(Trainer):
                 )
                 save_np(
                     outputs[-1][0].cpu().detach().numpy(),
-                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}_matrix.npy",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}_confidences.npy",
                 )
-                self.visualizer.plot_action_segmentation(
+                plot_action_segmentation(
                     pred.cpu().detach().numpy(),
                     labels[0].cpu().numpy(),
                     confidences=confidence.cpu().detach().numpy(),
                     int_to_text=test_loader.dataset.int_to_text,
                     file_path=f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[0]}.png",
                     palette=palette,
+                    legend_ncols=self.cfg.dataset.visualization.legend_ncols,
                 )
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(

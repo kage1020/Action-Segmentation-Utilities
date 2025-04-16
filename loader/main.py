@@ -55,8 +55,16 @@ class BaseDataset(Dataset, Base):
         return features, mask, gt, video_path.stem
 
     def _load_videos(self):
+        split_file_path = (
+            f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.{self.cfg.dataset.semi_per:.2f}.bundle"
+            if self.cfg.dataset.split_file_format is None
+            else f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.cfg.dataset.split_file_format.format({
+                "phase": self.phase,
+                "split": self.cfg.dataset.split,
+                })}"
+        )
         with open(
-            f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.{self.cfg.dataset.semi_per:.2f}.bundle",
+            split_file_path,
             "r",
         ) as f:
             lines = f.readlines()

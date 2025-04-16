@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from logging import ERROR, INFO, WARNING, Formatter, StreamHandler, getLogger
+from logging import INFO, getLogger
 from pprint import pformat
 from sys import stdout
 
@@ -10,34 +10,6 @@ class Color:
     YELLOW = "\033[93m"
     RED = "\033[91m"
     RESET = "\033[0m"
-
-
-class ColorFormatter(Formatter):
-    def format(self, record):
-        if record.levelno == INFO:
-            record.msg = Color.GREEN + record.msg + Color.RESET
-        elif record.levelno == WARNING:
-            record.msg = Color.YELLOW + record.msg + Color.RESET
-        elif record.levelno == ERROR:
-            record.msg = Color.RED + record.msg + Color.RESET
-        prefix = getattr(record, "prefix", "")
-        if prefix:
-            message = f"{prefix}{record.msg}"
-        else:
-            message = super().format(record)
-        suffix = getattr(record, "suffix", "")
-        return message + suffix
-
-
-class ColorStreamHandler(StreamHandler):
-    def __init__(self, stream=None):
-        super().__init__(stream)
-        self.setLevel(INFO)
-        self.terminator = ""
-        formatter = ColorFormatter(
-            "[%(asctime)s][%(name)s][%(levelname)s] - %(message)s"
-        )
-        self.setFormatter(formatter)
 
 
 def log(
@@ -76,13 +48,6 @@ class Logger:
     ):
         self.logger = getLogger(name)
         self.logger.setLevel(INFO)
-        handler = ColorStreamHandler(stdout)
-        self.logger.addHandler(handler)
-        self.logger.root.handlers = [
-            h
-            for h in self.logger.root.handlers
-            if not getattr(h, "stream", None) == stdout
-        ]
         self.width = width
 
     def info(

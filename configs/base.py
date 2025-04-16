@@ -4,6 +4,11 @@ from omegaconf import DictConfig
 
 
 @dataclass
+class VisualizationConfig(DictConfig):
+    legend_ncols: int | None
+
+
+@dataclass
 class DatasetConfig(DictConfig):
     name: str
     mapping_path: str | None
@@ -25,12 +30,15 @@ class DatasetConfig(DictConfig):
     shuffle: bool
     base_dir: str
     split_dir: str
+    split_file_format: str | None
     gt_dir: str
     feature_dir: str
     action_dir: str
     prob_dir: str | None
     pseudo_dir: str | None
     semi_per: float | None
+
+    visualization: VisualizationConfig
 
 
 @dataclass

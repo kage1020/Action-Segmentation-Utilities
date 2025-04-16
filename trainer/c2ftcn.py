@@ -155,7 +155,7 @@ class C2FTCNCriterion(Module):
             feature_contrast_loss = 0
         else:
             feat_sim_pos = pos_weight_mat * f11
-            max_val = torch.max(not_same_activity * f11, dim=1, keep_dim=True)[0]
+            max_val = torch.max(not_same_activity * f11, dim=1, keepdim=True)[0]
             acc = torch.sum(feat_sim_pos > max_val) / count_pos
             feat_sim_neg_sum = torch.sum(not_same_activity * f11, dim=1)
 
@@ -408,7 +408,7 @@ class C2FTCNTrainer(Trainer):
             if (epoch + 1) % (self.cfg.epochs // 10) == 0:
                 save_model(
                     self.model,
-                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch-{epoch+1}.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch_{epoch+1}_split{self.cfg.dataset.split}.model",
                 )
 
             if self.best_f1[0] < f1[0]:
@@ -417,7 +417,7 @@ class C2FTCNTrainer(Trainer):
                 self.best_f1 = f1
                 save_model(
                     self.model,
-                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/best_split{self.cfg.dataset.split}.model",
                 )
 
             self.schedulers.step()

@@ -8,11 +8,11 @@ from torch.optim.adam import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 from tqdm import tqdm
 
-from ..base import to_class_index
+from ..base import save_labels, save_np, to_class_index
 from ..configs import LTContextConfig
 from ..evaluator import Evaluator
 from ..loader import BaseDataLoader
-from ..visualizer import Visualizer
+from ..visualizer import Visualizer, plot_action_segmentation
 from .main import Trainer
 
 
@@ -141,7 +141,7 @@ class LTContextTrainer(Trainer):
             if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.model.state_dict(),
-                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch-{epoch+1}.model",
+                    f"{self.hydra_dir}/{self.cfg.result_dir}/epoch_{epoch+1}_split{self.cfg.dataset.split}.model",
                 )
 
             acc, edit, f1 = self.train_evaluator.get()
@@ -196,7 +196,20 @@ class LTContextTrainer(Trainer):
                     confidence = torch.max(
                         F.softmax(logits[-1][i], dim=0), dim=0
                     ).values
-                    self.visualizer.plot_action_segmentation(
+                    save_labels(
+                        list(
+                            map(
+                                test_loader.dataset.int_to_text.get,
+                                pred.cpu().detach().numpy(),
+                            )
+                        ),
+                        f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}_{i}.txt",
+                    )
+                    save_np(
+                        logits[i].cpu().detach().numpy(),
+                        f"{self.hydra_dir}/{self.cfg.result_dir}/{video_names[i]}_{i}_confidences.npy",
+                    )
+                    plot_action_segmentation(
                         pred.cpu().numpy(),
                         target.cpu().numpy(),
                         confidence.cpu().numpy(),
@@ -206,6 +219,7 @@ class LTContextTrainer(Trainer):
                             self.cfg.dataset.backgrounds,
                             test_loader.dataset.text_to_int,
                         ),
+                        legend_ncols=self.cfg.dataset.visualization.legend_ncols,
                     )
 
             acc, edit, f1 = self.test_evaluator.get()

@@ -1,9 +1,7 @@
-from .main import Color, ColorFormatter, ColorStreamHandler, Logger, log
+from .main import Color, Logger, log
 
 __all__ = [
     "Color",
-    "ColorFormatter",
-    "ColorStreamHandler",
-    "log",
     "Logger",
+    "log",
 ]

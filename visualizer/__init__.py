@@ -1,11 +1,14 @@
 from .main import (
     Visualizer,
+    make_video,
+    plot_action_segmentation,
     plot_confidences,
     plot_feature,
     plot_features,
     plot_image,
     plot_loss,
     plot_metrics,
+    plot_roc_curve,
     plot_tsne,
 )
 from .palette import (
@@ -49,12 +52,15 @@ from .reader import VideoReader
 from .writer import VideoWriter
 
 __all__ = [
+    "make_video",
+    "plot_action_segmentation",
     "plot_confidences",
     "plot_feature",
     "plot_features",
     "plot_image",
     "plot_loss",
     "plot_metrics",
+    "plot_roc_curve",
     "plot_tsne",
     "Visualizer",
     "cat",
