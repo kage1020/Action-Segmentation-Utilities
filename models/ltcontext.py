@@ -151,9 +151,9 @@ class MultiHeadAttention(nn.Module):
             d = t.shape[1]
         else:
             d = t.shape[2]
-        assert (
-            d % self.dim_k == 0
-        ), f"the {name} embeddings need to be divisible by the number of heads"
+        assert d % self.dim_k == 0, (
+            f"the {name} embeddings need to be divisible by the number of heads"
+        )
 
     def _split_heads(self, tensor: Tensor) -> Tensor:
         """

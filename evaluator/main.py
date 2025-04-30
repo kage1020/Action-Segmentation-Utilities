@@ -1,7 +1,7 @@
 from typing import Literal
 
 import numpy as np
-from numpy import ndarray
+from numpy.typing import NDArray
 from sklearn.metrics import roc_auc_score
 from torch import Tensor
 
@@ -9,14 +9,14 @@ from ..base import Base, to_np, to_segments
 from ..configs import Config
 
 
-def accuracy_frame(gt: list | ndarray | Tensor, pred: list | ndarray | Tensor) -> float:
+def accuracy_frame(gt: list | NDArray | Tensor, pred: list | NDArray | Tensor) -> float:
     _gt = to_np(gt)
     _pred = to_np(pred)
     return np.mean(_gt == _pred)
 
 
 def accuracy_class(
-    gt: list | ndarray | Tensor, pred: list | ndarray | Tensor
+    gt: list | NDArray | Tensor, pred: list | NDArray | Tensor
 ) -> list[float]:
     _gt = to_np(gt)
     _pred = to_np(pred)
@@ -29,7 +29,7 @@ def accuracy_class(
     return acc
 
 
-def levenshtein(x: list | ndarray | Tensor, y: list | ndarray | Tensor) -> int:
+def levenshtein(x: list | NDArray | Tensor, y: list | NDArray | Tensor) -> int:
     m = len(x)
     n = len(y)
     dp = np.zeros((m + 1, n + 1))
@@ -48,9 +48,9 @@ def levenshtein(x: list | ndarray | Tensor, y: list | ndarray | Tensor) -> int:
 
 
 def edit_score(
-    gt: list | ndarray | Tensor,
-    pred: list | ndarray | Tensor,
-    backgrounds: list | ndarray | Tensor = [],
+    gt: list | NDArray | Tensor,
+    pred: list | NDArray | Tensor,
+    backgrounds: list | NDArray | Tensor = [],
 ) -> float:
     _gt = to_np(gt)
     _pred = to_np(pred)
@@ -71,10 +71,10 @@ def iou(gt: tuple[int, int], pred: tuple[int, int]) -> float:
 
 
 def tp_fp_fn(
-    gt: list | ndarray | Tensor,
-    pred: list | ndarray | Tensor,
+    gt: list | NDArray | Tensor,
+    pred: list | NDArray | Tensor,
     tau: float,
-    backgrounds: list | ndarray | Tensor = [],
+    backgrounds: list | NDArray | Tensor = [],
 ) -> tuple[int, int, int]:
     _gt = to_np(gt)
     _pred = to_np(pred)
@@ -101,8 +101,8 @@ def tp_fp_fn(
 
 
 def precision(
-    gt: list | ndarray | Tensor,
-    pred: list | ndarray | Tensor,
+    gt: list | NDArray | Tensor,
+    pred: list | NDArray | Tensor,
     tau: float,
 ) -> float:
     tp, fp, _ = tp_fp_fn(gt, pred, tau)
@@ -110,8 +110,8 @@ def precision(
 
 
 def recall(
-    gt: list | ndarray | Tensor,
-    pred: list | ndarray | Tensor,
+    gt: list | NDArray | Tensor,
+    pred: list | NDArray | Tensor,
     tau: float,
 ) -> float:
     tp, _, fn = tp_fp_fn(gt, pred, tau)
@@ -119,8 +119,8 @@ def recall(
 
 
 def f1(
-    gt: list | ndarray | Tensor,
-    pred: list | ndarray | Tensor,
+    gt: list | NDArray | Tensor,
+    pred: list | NDArray | Tensor,
     tau: float,
 ) -> float:
     p = precision(gt, pred, tau)
@@ -129,9 +129,9 @@ def f1(
 
 
 def auc(
-    gt: list | ndarray | Tensor,
-    prob: ndarray | Tensor,
-    backgrounds: list | ndarray | Tensor,
+    gt: list | NDArray | Tensor,
+    prob: NDArray | Tensor,
+    backgrounds: list | NDArray | Tensor,
 ):
     _gt = to_np(gt)
     _prob = to_np(prob)
@@ -174,8 +174,8 @@ class Evaluator(Base):
 
     def add(
         self,
-        gt: ndarray | Tensor,
-        pred: ndarray | Tensor,
+        gt: NDArray | Tensor,
+        pred: NDArray | Tensor,
         task: Literal[
             "action_segmentation", "anomaly_detection"
         ] = "action_segmentation",
@@ -193,7 +193,7 @@ class Evaluator(Base):
             self.fns = [self.fns[i] + fns[i] for i in range(len(self.fns))]
         else:
             # to prob
-            if isinstance(pred, ndarray):
+            if isinstance(pred, np.ndarray):
                 prob = Base.to_tensor(pred).softmax(dim=1).cpu().numpy()
                 self.aucs.append(auc(gt, prob, self.backgrounds))
             else:

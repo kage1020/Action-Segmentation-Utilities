@@ -20,10 +20,12 @@ This repository is configured to run on Docker with Dev Containers. To use this 
 
 1. Install [Docker](https://www.docker.com/products/docker-desktop/) on your machine.
 2. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension on Visual Studio Code.
+3. Install [Poetry](https://python-poetry.org/).
 3. Open this repository on Visual Studio Code as a Dev Container.
 4. Run the following command in the terminal to install the required packages:
 
     ```bash
+    poetry self add poetry-plugin-shell
     poetry shell
     poetry install
     ```
@@ -39,6 +41,7 @@ You can use this repository as a submodule in your project. To add this reposito
 git submodule add https://github.com/kage1020/Action-Segmentation-Utilities.git asu
 cd asu
 
+# If you haven't installed Poetry yet, install it first
 # Install the required packages
 poetry install
 # or
@@ -54,10 +57,11 @@ You can use this repository with [Hydra](https://hydra.cc/) to manage your confi
 ```python
 # main.py
 import hydra
-from base.main import Base, Config
-from loader.breakfast import BreakfastDataLoader
-from models.asformer import ASFormer
-from trainer.asformer import ASFormerTrainer
+from base import Base
+from configs import Config
+from loader import BreakfastDataLoader
+from models import ASFormer
+from trainer import ASFormerTrainer
 
 
 @hydra.main(config_path=None, config_name=None, version_base=None)
@@ -91,10 +95,10 @@ if __name__ == "__main__":
 If you use this repository as a submodule, add `asu` to the module path like below:
 
 ```python
-from asu.base.main import Base, Config
-from asu.loader.breakfast import BreakfastDataLoader
-from asu.models.asformer import ASFormer
-from asu.trainer.asformer import ASFormerTrainer
+from asu.base import Base, Config
+from asu.loader import BreakfastDataLoader
+from asu.models import ASFormer
+from asu.trainer import ASFormerTrainer
 ```
 
 Run the following command to execute the code:

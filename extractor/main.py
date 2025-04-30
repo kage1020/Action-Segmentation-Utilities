@@ -21,12 +21,13 @@ class Extractor(Base):
         out_dir: str,
         video_dir: str | None = None,
         image_dir: str | None = None,
+        flow_dir: str | None = None,
         boundary_dir: str | None = None,
     ):
         super().__init__(name="Extractor")
-        assert (
-            video_dir is not None or image_dir is not None
-        ), "video_dir or image_dir must be provided"
+        assert video_dir is not None or image_dir is not None, (
+            "video_dir or image_dir must be provided"
+        )
 
         self.out_dir = Path(out_dir)
         self.video_paths = (
@@ -39,6 +40,7 @@ class Extractor(Base):
         )
         self.video_paths.sort()
         self.image_dir = Path(image_dir) if image_dir is not None else None
+        self.flow_dir = Path(flow_dir) if flow_dir is not None else None
         self.boundary_dir = Path(boundary_dir) if boundary_dir is not None else None
 
         os.makedirs(self.out_dir, exist_ok=True)
@@ -49,6 +51,7 @@ class Extractor(Base):
 
         loader = I3DDataLoader(
             image_dir=self.image_dir,
+            flow_dir=self.flow_dir,
             temporal_window=15,
             num_workers=1,
             boundary_dir=self.boundary_dir,
@@ -67,10 +70,12 @@ class Extractor(Base):
                     rgb_features = rgb_model.extract_features(rgb[0])
                     flows_features = flow_model.extract_features(flows[0])
                     features.append(
-                        torch.cat([rgb_features, flows_features], dim=1).cpu().numpy()
+                        torch.cat([rgb_features.squeeze(), flows_features.squeeze()])
+                        .cpu()
+                        .numpy()
                     )
 
-                features = np.concatenate(features, axis=0)
+                features = np.stack(features)
                 np.save(out_path, features)
 
     def extract_s3d_features(self, model: S3D):

@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from numpy import ndarray
+from numpy.typing import NDArray
 from sklearn.manifold import TSNE
 from sklearn.metrics import RocCurveDisplay, roc_curve
 from tqdm import tqdm
@@ -17,13 +17,13 @@ from .writer import VideoWriter
 
 
 def plot_image(
-    feature: ndarray, file_path: str = "feature.png", is_jupyter: bool = False
+    feature: NDArray, file_path: str = "feature.png", is_jupyter: bool = False
 ):
     """
     Plots an image tensor using matplotlib.
 
     Args:
-        feature (ndarray): A 3D NumPy array representing the image.
+        feature (NDArray): A 3D NumPy array representing the image.
         file_path (str, optional): File path to save the image if not displaying in Jupyter. Defaults to "feature.png".
         is_jupyter (bool, optional): Whether to display inline in a Jupyter notebook. Defaults to False. If you want to use this function in jupyter notebook, please set `%matplotlib inline` at the top of the notebook.
     Raises:
@@ -51,7 +51,7 @@ def plot_image(
 
 
 def plot_feature(
-    feature: ndarray,
+    feature: NDArray,
     file_path: str = "feature.png",
     is_jupyter: bool = False,
     cmap: str = "viridis",
@@ -60,7 +60,7 @@ def plot_feature(
     Plots a feature tensor using matplotlib.
 
     Args:
-        feature (ndarray): A 2D NumPy array representing the feature.
+        feature (NDArray): A 2D NumPy array representing the feature.
         file_path (str, optional): File path to save the image if not displaying in Jupyter. Defaults to "feature.png".
         is_jupyter (bool, optional): Whether to display inline in a Jupyter notebook. Defaults to False. If you want to use this function in jupyter notebook, please set `%matplotlib inline` at the top of the notebook.
         cmap (str, optional): Colormap for the plot. Defaults to "viridis".
@@ -70,7 +70,7 @@ def plot_feature(
     Returns:
         None
     """
-    if not isinstance(feature, ndarray):
+    if not isinstance(feature, np.ndarray):
         raise TypeError("`feature` must be a NumPy ndarray.")
     if feature.ndim != 2:
         raise ValueError("`feature` must be a 2D array.")
@@ -91,7 +91,7 @@ def plot_feature(
 
 
 def plot_features(
-    features: list[ndarray] | ndarray,
+    features: list[NDArray] | NDArray,
     file_paths: list[str] = [],
     is_jupyter: bool = False,
     ncols: int = None,
@@ -114,9 +114,9 @@ def plot_features(
     Returns:
         None
     """
-    if not isinstance(features, (list, ndarray)):
+    if not isinstance(features, (list, np.ndarray)):
         raise TypeError("`features` must be a list or a NumPy ndarray.")
-    if isinstance(features, ndarray) and len(features.shape) != 3:
+    if isinstance(features, np.ndarray) and len(features.shape) != 3:
         raise ValueError("`features` must be a 3D array.")
     if isinstance(features, list) and len(features) == 0:
         raise ValueError("`features` list cannot be empty.")
@@ -152,7 +152,7 @@ def plot_features(
 
 
 def plot_tsne(
-    feature: ndarray,
+    feature: NDArray,
     gt: list[int] | None = None,
     file_path: str | Path = "tsne.png",
     is_jupyter: bool = False,
@@ -162,7 +162,7 @@ def plot_tsne(
     Plots a t-SNE visualization of the feature tensor.
 
     Args:
-        feature (ndarray): A 2D NumPy array representing the feature.
+        feature (NDArray): A 2D NumPy array representing the feature.
         gt (list[int], optional): A list of ground truth labels. Defaults to None.
         file_path (str | Path, optional): File path to save the image if not displaying in Jupyter. Defaults to "tsne.png".
         is_jupyter (bool, optional): Whether to display inline in a Jupyter notebook. Defaults to False. If you want to use this function in jupyter notebook, please set `%matplotlib inline` at the top of the notebook.
@@ -173,7 +173,7 @@ def plot_tsne(
     Returns:
         None
     """
-    if not isinstance(feature, ndarray):
+    if not isinstance(feature, np.ndarray):
         raise TypeError("`feature` must be a NumPy ndarray.")
     if feature.ndim != 2:
         raise ValueError("`feature` must be a 2D array.")
@@ -210,15 +210,15 @@ def plot_loss(
     test_loss: list[tuple[int, float]] | None = None,
     file_path: str = "loss.png",
 ):
-    assert (
-        train_loss or test_loss
-    ), "Either `train_loss` or `test_loss` must be provided"
-    assert (
-        train_loss and len(train_loss[0]) == 2
-    ), "`train_loss` must be a list of tuples with epoch and loss"
-    assert (
-        test_loss and len(test_loss[0]) == 2
-    ), "`test_loss` must be a list of tuples with epoch and loss"
+    assert train_loss or test_loss, (
+        "Either `train_loss` or `test_loss` must be provided"
+    )
+    assert train_loss and len(train_loss[0]) == 2, (
+        "`train_loss` must be a list of tuples with epoch and loss"
+    )
+    assert test_loss and len(test_loss[0]) == 2, (
+        "`test_loss` must be a list of tuples with epoch and loss"
+    )
 
     epochs = [x[0] for x in train_loss] if train_loss else [x[0] for x in test_loss]
     train_values = [x[1] for x in train_loss] if train_loss else []
@@ -255,7 +255,7 @@ def plot_metrics(
 
 
 def plot_confidences(
-    confidences: ndarray, file_path: str = "confidences.png", axis: bool = True
+    confidences: NDArray, file_path: str = "confidences.png", axis: bool = True
 ):
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -279,9 +279,9 @@ def plot_confidences(
 
 
 def plot_action_segmentation(
-    pred: ndarray | None = None,
-    gt: ndarray | None = None,
-    confidences: ndarray | None = None,
+    pred: NDArray | None = None,
+    gt: NDArray | None = None,
+    confidences: NDArray | None = None,
     file_path: Path | str = "action_segmentation.png",
     backgrounds: np.ndarray = np.array([]),
     num_classes: int = 50,
@@ -322,7 +322,8 @@ def plot_action_segmentation(
         max_num_segments = max(len(pred_segments), len(gt_segments))
         pred_segments += [(-1, (0, 0))] * (max_num_segments - len(pred_segments))
         gt_segments += [(-1, (0, 0))] * (max_num_segments - len(gt_segments))
-        fig_size = (10, 4)
+        if confidences is not None:
+            fig_size = (10, 4)
 
     if confidences is not None:
         fig_size = (10, fig_size[1] + 1)
@@ -345,8 +346,9 @@ def plot_action_segmentation(
         bar_ax = fig.add_subplot(gs[0:3])
         legend_anchor = (0.5, -0.5)
     elif (pred is not None and gt is not None) and confidences is None:
-        bar_ax = fig.add_subplot(gs[0:3])
-        legend_anchor = (0.5, -0.5)
+        bar_ax = fig.add_subplot(gs[:, :])
+        fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0)
+        legend_anchor = (0.5, -0.15)
     elif (pred is not None and gt is not None) and confidences is not None:
         fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0.2)
         bar_ax = fig.add_subplot(gs[0:2])
@@ -369,7 +371,9 @@ def plot_action_segmentation(
                 left=acc[0],
             )
             acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
-            if pred_segments[i][0] not in [x[0] for x in target_bar]:
+            if pred_segments[i][0] != -1 and pred_segments[i][0] not in [
+                x[0] for x in target_bar
+            ]:
                 target_bar.append((pred_segments[i][0], p[0]))
         elif pred is None and gt is not None:
             p = bar_ax.barh(
@@ -379,7 +383,9 @@ def plot_action_segmentation(
                 left=acc[0],
             )
             acc[0] += int(gt_segments[i][1][1] - gt_segments[i][1][0])
-            if gt_segments[i][0] not in [x[0] for x in target_bar]:
+            if gt_segments[i][0] != -1 and gt_segments[i][0] not in [
+                x[0] for x in target_bar
+            ]:
                 target_bar.append((gt_segments[i][0], p[0]))
         elif pred is not None and gt is not None:
             p = bar_ax.barh(
@@ -393,25 +399,31 @@ def plot_action_segmentation(
             )
             acc[0] += pred_segments[i][1][1] - pred_segments[i][1][0]
             acc[1] += gt_segments[i][1][1] - gt_segments[i][1][0]
-            if pred_segments[i][0] not in [x[0] for x in target_bar]:
+            if pred_segments[i][0] != -1 and pred_segments[i][0] not in [
+                x[0] for x in target_bar
+            ]:
                 target_bar.append((pred_segments[i][0], p[0]))
-            if gt_segments[i][0] not in [x[0] for x in target_bar]:
+            if gt_segments[i][0] != -1 and gt_segments[i][0] not in [
+                x[0] for x in target_bar
+            ]:
                 target_bar.append((gt_segments[i][0], p[1]))
 
+    n_legends = len(target_bar)
+    nrows = math.ceil(n_legends / legend_ncols)
+    new_idx = []
+    for i in range(legend_ncols):
+        for j in range(nrows):
+            index = i + j * legend_ncols
+            if index < n_legends:
+                new_idx.append(index)
+
+    labels = [int_to_text[int(label)] for label, _ in target_bar]
+    labels = [labels[i] for i in new_idx]
     bar_ax.set_xlim(right=acc[0])
     bar_ax.set_xlabel("Frame")
-    ordered_target_bar = sum(
-        [target_bar[i::legend_ncols] for i in range(legend_ncols)], []
-    )
-    ordered_unique_label = np.concatenate(
-        [unique_label[i::legend_ncols] for i in range(legend_ncols)]
-    )
     bar_ax.legend(
-        [x[1] for x in ordered_target_bar],
-        [
-            int_to_text[int(ordered_unique_label[i])]
-            for i in range(len(ordered_unique_label))
-        ],
+        [target_bar[i][1] for i in new_idx],
+        labels,
         bbox_to_anchor=legend_anchor,
         loc="upper center",
         ncols=legend_ncols,
@@ -450,8 +462,8 @@ def plot_action_segmentation(
 
 
 def plot_roc_curve(
-    gt: ndarray,
-    pred: ndarray,
+    gt: NDArray,
+    pred: NDArray,
     file_path: str = "roc_curve.png",
 ):
     fpr, tpr, _ = roc_curve(gt, pred)
@@ -463,14 +475,14 @@ def plot_roc_curve(
 
 
 def make_video(
-    pred: ndarray | None = None,
-    gt: ndarray | None = None,
-    confidences: ndarray | None = None,
+    pred: NDArray | None = None,
+    gt: NDArray | None = None,
+    confidences: NDArray | None = None,
     image_dir: str | None = None,
-    images: list[str] | list[np.ndarray] | None = None,
+    images: list[str] | list[NDArray] | None = None,
     video_path: str | None = None,
     out_path: str = "action_segmentation.mp4",
-    backgrounds: ndarray = np.array([]),
+    backgrounds: NDArray = np.array([]),
     int_to_text: dict[int, str] = dict(),
     num_classes: int = 50,
     show_segment: bool = True,
@@ -494,7 +506,6 @@ def make_video(
         )
         segmentation = cv2.resize(
             segmentation,
-            None,
             fx=video_size[1] / segmentation.shape[1],
             fy=video_size[1] / segmentation.shape[1],
         )

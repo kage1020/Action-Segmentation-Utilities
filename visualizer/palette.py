@@ -19,6 +19,12 @@ def hex_to_rgba(_hex: str) -> tuple[float, float, float, float]:
     )
 
 
+def rgba_to_hex(rgba: tuple[float, float, float, float]) -> str:
+    return "#{:02x}{:02x}{:02x}".format(
+        int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255)
+    )
+
+
 SLATE10 = [
     (241 / 255, 245 / 255, 249 / 255, 1),
     (203 / 255, 213 / 255, 225 / 255, 1),

@@ -104,7 +104,7 @@ class S3DDataset(Dataset):
                 batch_size=1,
                 num_workers=self.num_workers,
                 shuffle=False,
-            ), self.image_dir / (video_name + f"_{boundary_idx_in_video+1:02d}")
+            ), self.image_dir / (video_name + f"_{boundary_idx_in_video + 1:02d}")
         else:
             image_dir = self.image_dirs[idx]
             image_paths = list(image_dir.glob("*.png"))

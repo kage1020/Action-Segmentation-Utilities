@@ -51,7 +51,7 @@ class Logger:
         self.width = width
 
     def info(
-        self, message: str | dict | list | object, prefix: str = "", end: str = "\n"
+        self, message: str | dict | list | object, prefix: str = "", end: str = ""
     ):
         self.logger.info(
             pformat(message, width=self.width)[1:-1],
@@ -59,7 +59,7 @@ class Logger:
         )
 
     def warning(
-        self, message: str | dict | list | object, prefix: str = "", end: str = "\n"
+        self, message: str | dict | list | object, prefix: str = "", end: str = ""
     ):
         self.logger.warning(
             pformat(message, width=self.width)[1:-1],
@@ -67,7 +67,7 @@ class Logger:
         )
 
     def error(
-        self, message: str | dict | list | object, prefix: str = "", end: str = "\n"
+        self, message: str | dict | list | object, prefix: str = "", end: str = ""
     ):
         self.logger.error(
             pformat(message, width=self.width)[1:-1],

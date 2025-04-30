@@ -11,9 +11,9 @@ class VideoReader:
         images: list[str] | list[np.ndarray] | None = None,
         video_path: str | None = None,
     ):
-        assert (
-            image_dir is not None or images is not None or video_path is not None
-        ), "Either `image_dir`, `images`, or `video_path` must be provided"
+        assert image_dir is not None or images is not None or video_path is not None, (
+            "Either `image_dir`, `images`, or `video_path` must be provided"
+        )
 
         self.image_dir = image_dir
         self.images = images

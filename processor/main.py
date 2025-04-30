@@ -83,13 +83,13 @@ class Processor(Base):
                 ).tolist()
 
                 with open(
-                    split_dir / f"train.split{i+1}.{semi_per:.2f}.bundle",
+                    split_dir / f"train.split{i + 1}.{semi_per:.2f}.bundle",
                     "a",
                 ) as f:
                     f.writelines(train_paths)
 
                 with open(
-                    split_dir / f"test.split{i+1}.{semi_per:.2f}.bundle",
+                    split_dir / f"test.split{i + 1}.{semi_per:.2f}.bundle",
                     "a",
                 ) as f:
                     f.writelines(test_files)

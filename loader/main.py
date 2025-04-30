@@ -57,11 +57,13 @@ class BaseDataset(Dataset, Base):
     def _load_videos(self):
         split_file_path = (
             f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.phase}.split{self.cfg.dataset.split}.{self.cfg.dataset.semi_per:.2f}.bundle"
-            if self.cfg.dataset.split_file_format is None
-            else f"{self.data_dir}/{self.cfg.dataset.split_dir}/{self.cfg.dataset.split_file_format.format({
-                "phase": self.phase,
-                "split": self.cfg.dataset.split,
-                })}"
+            if self.cfg.dataset.get("split_file_format") is None
+            else f"{self.data_dir}/{self.cfg.dataset.split_dir}/{
+                self.cfg.dataset.split_file_format.format(
+                    phase=self.phase,
+                    split=self.cfg.dataset.split,
+                )
+            }"
         )
         with open(
             split_file_path,

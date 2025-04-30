@@ -263,9 +263,9 @@ class I3D(nn.Module):
         """
         super().__init__()
 
-        assert (
-            final_endpoint in self.VALID_ENDPOINTS
-        ), f"Unknown final endpoint {final_endpoint}"
+        assert final_endpoint in self.VALID_ENDPOINTS, (
+            f"Unknown final endpoint {final_endpoint}"
+        )
         self._num_classes = num_classes
         self._spatial_squeeze = spatial_squeeze
         self._final_endpoint = final_endpoint

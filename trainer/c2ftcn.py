@@ -396,19 +396,19 @@ class C2FTCNTrainer(Trainer):
                 self.optimizers.zero_grad()
                 loss.backward()
                 self.optimizers.step()
-                self.logger.info(f"Epoch {epoch+1} | Loss: {loss.item()}")
+                self.logger.info(f"Epoch {epoch + 1} | Loss: {loss.item()}")
 
                 self.train_evaluator.add(labels, pred)
 
             acc, edit, f1 = self.train_evaluator.get()
             self.logger.info(
-                f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
+                f"Epoch {epoch + 1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
 
             if (epoch + 1) % (self.cfg.epochs // 10) == 0:
                 save_model(
                     self.model,
-                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch_{epoch+1}_split{self.cfg.dataset.split}.model",
+                    f"{self.cfg.dataset.base_dir}/{self.cfg.dataset}/{self.cfg.result_dir}/models/epoch_{epoch + 1}_split{self.cfg.dataset.split}.model",
                 )
 
             if self.best_f1[0] < f1[0]:
@@ -441,7 +441,7 @@ class C2FTCNTrainer(Trainer):
 
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
-                f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
+                f"Epoch {epoch + 1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
 
     def train_unsupervised(self, train_loader):
@@ -470,7 +470,7 @@ class C2FTCNTrainer(Trainer):
                 self.optimizers.zero_grad()
                 loss.backward()
                 self.optimizers.step()
-                self.logger.info(f"Epoch {epoch+1} | Loss: {loss.item()}")
+                self.logger.info(f"Epoch {epoch + 1} | Loss: {loss.item()}")
 
             self.schedulers.step()
 
@@ -493,7 +493,7 @@ class C2FTCNTrainer(Trainer):
 
             acc, edit, f1 = self.test_evaluator.get()
             self.logger.info(
-                f"Epoch {epoch+1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
+                f"Epoch {epoch + 1} | F1@10: {f1[0]:.3f}, F1@25: {f1[1]:.3f}, F1@50: {f1[2]:.3f}, Edit: {edit:.3f}, Acc: {acc:.3f}, Loss: {epoch_loss:.3f}"
             )
 
     def train(self, train_loader: DataLoader, test_loader: DataLoader):

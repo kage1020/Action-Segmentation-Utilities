@@ -164,7 +164,7 @@ class PaprikaTrainer(Trainer):
                 self.optimizer.step()
                 self.scheduler.step()
 
-            self.logger.info(f"Epoch {epoch+1}, Loss: {epoch_loss}")
+            self.logger.info(f"Epoch {epoch + 1}, Loss: {epoch_loss}")
 
     def test(self, loader: BaseDataLoader):
         pass

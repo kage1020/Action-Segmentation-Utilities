@@ -101,8 +101,8 @@ class AttentionLayer(nn.Module):
         r2: int,
         r3: int,
         dilation: int,
-        att_type: str,
         stage: str,
+        att_type: str,
     ):
         """
         Parameters:
@@ -497,8 +497,8 @@ class AttentionModule(nn.Module):
             r1,
             r2,
             dilation,
-            att_type,
             stage,
+            att_type,
         )
         self.conv_1x1 = nn.Conv1d(out_channels, out_channels, 1)
         self.dropout = nn.Dropout()

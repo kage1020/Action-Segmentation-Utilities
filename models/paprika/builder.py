@@ -334,9 +334,9 @@ class Builder(Base):
             G.shape[0] * G.shape[0],
         )
         x = [np.log(val) for val in G_flat if val != 0]
-        assert (
-            len(x) > 0
-        ), "No edges remain after thresholding! Please use a smaller edge_min_aggconf!"
+        assert len(x) > 0, (
+            "No edges remain after thresholding! Please use a smaller edge_min_aggconf!"
+        )
         max_val = np.max(x)
 
         G_new = np.zeros((G.shape[0], G.shape[0]))

@@ -67,3 +67,5 @@ has_actions_header: False
 actions_action_separator: " "
 actions_class_separator: ","
 matching_separator: " "
+visualization:
+  legend_ncols: 7

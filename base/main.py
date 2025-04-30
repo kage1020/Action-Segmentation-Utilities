@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import torch
 from dotenv import load_dotenv
-from numpy import ndarray
+from numpy.typing import NDArray
 from torch import Tensor
 from torch.nn import Module
 
@@ -20,8 +20,8 @@ load_dotenv()
 
 
 def unique(
-    x: list | ndarray, return_index: bool = False
-) -> ndarray | tuple[ndarray, ndarray]:
+    x: list | NDArray, return_index: bool = False
+) -> NDArray | tuple[NDArray, NDArray]:
     _, unique_indices = np.unique(x, return_index=True)
     if return_index:
         return np.array([x[i] for i in np.sort(unique_indices)]), unique_indices
@@ -129,33 +129,33 @@ def save_model(model: Module, model_path: str):
     torch.save(model.state_dict(), model_path)
 
 
-def to_np(x: list | ndarray | Tensor, mapping: dict[str, int] | None = None) -> ndarray:
+def to_np(x: list | NDArray | Tensor, mapping: dict[str, int] | None = None) -> NDArray:
     if len(x) == 0:
         return np.array([])
     if isinstance(x, list):
         if isinstance(x[0], str):
             return to_class_index(x, mapping if mapping is not None else {})
         return np.array(x)
-    if isinstance(x, ndarray):
+    if isinstance(x, np.ndarray):
         return x
     if isinstance(x, Tensor):
         return x.detach().cpu().numpy()
     raise ValueError("Invalid input type")
 
 
-def to_torch(x: list | ndarray | Tensor | None) -> Tensor:
+def to_torch(x: list | NDArray | Tensor | None) -> Tensor:
     if x is None:
         return Tensor([])
     if isinstance(x, list):
         return Tensor(x)
-    if isinstance(x, ndarray):
+    if isinstance(x, np.ndarray):
         return Tensor(x)
     if isinstance(x, Tensor):
         return x.detach()
     raise ValueError("Invalid input type")
 
 
-def save_np(x: ndarray, path: str) -> None:
+def save_np(x: NDArray, path: str) -> None:
     np.save(path, x)
 
 
@@ -164,12 +164,12 @@ def save_labels(x: list, path: str) -> None:
         f.writelines([f"{item}\n" for item in x])
 
 
-def to_class_name(x: ndarray | Tensor, int_to_text: dict[int, str]) -> list[str]:
+def to_class_name(x: NDArray | Tensor, int_to_text: dict[int, str]) -> list[str]:
     _x = to_np(x)
     return [int_to_text[i] for i in _x]
 
 
-def to_class_index(x: list[str], text_to_int: dict[str, int]) -> ndarray:
+def to_class_index(x: list[str], text_to_int: dict[str, int]) -> NDArray:
     _x = [text_to_int[i] for i in x]
     return to_np(_x)
 
@@ -191,24 +191,35 @@ def save_file(path: str | Path, x: list[str]):
         f.write("\n".join(x))
 
 
-def load_image(img_path: str) -> ndarray:
+def load_image(img_path: str) -> NDArray:
     return cv2.imread(img_path)
 
 
-def load_images(img_dir: str) -> list[ndarray]:
+def load_images(img_dir: str) -> list[NDArray]:
     image_paths = get_image_paths(img_dir)
     return [load_image(img_path) for img_path in image_paths]
 
 
-def to_image(feature: ndarray) -> ndarray:
+def to_image(feature: NDArray) -> NDArray:
     _feature = feature - feature.min()
     _feature = _feature / _feature.max()
     return (_feature * 255).astype(np.uint8)
 
 
 def get_class_mapping(
-    mapping_path: str, has_header: bool = False, separator: str = " "
+    mapping_path: str | None = None,
+    classes: list[str] | None = None,
+    has_header: bool = False,
+    separator: str = " ",
 ) -> tuple[dict[str, int], dict[int, str]]:
+    assert mapping_path is not None or classes is not None, (
+        "Mapping path or classes should be provided"
+    )
+    if mapping_path is None:
+        text_to_int = {c: i for i, c in enumerate(classes)}
+        int_to_text = {i: c for i, c in enumerate(classes)}
+        return text_to_int, int_to_text
+
     try:
         with open(mapping_path, "r") as f:
             lines = f.readlines()
@@ -320,7 +331,7 @@ def get_boundaries(boundary_dir: Path) -> dict[str, list[tuple[int, int]]]:
 
 
 def to_segments(
-    x: ndarray, backgrounds: ndarray = np.array([])
+    x: NDArray, backgrounds: NDArray = np.array([])
 ) -> list[tuple[int, tuple[int, int]]]:
     _x = np.array(x)
     diff = np.diff(_x, prepend=-100)
@@ -338,7 +349,7 @@ def to_segments(
     return segments
 
 
-def mask_label_with_backgrounds(x: ndarray, backgrounds: ndarray):
+def mask_label_with_backgrounds(x: NDArray, backgrounds: NDArray):
     if len(backgrounds) == 0:
         return x
     return np.array([t if t not in backgrounds else backgrounds[0] for t in x])
@@ -464,9 +475,9 @@ class Base:
         action1 class1,class2,class3,...
         action2 class4,class5,class6,...
         """
-        assert (
-            len(self.text_to_int) > 1
-        ), "Class mapping is not set. Please set the class mapping first by `set_class_mapping` method."
+        assert len(self.text_to_int) > 1, (
+            "Class mapping is not set. Please set the class mapping first by `set_class_mapping` method."
+        )
 
         with open(actions_path, "r") as f:
             lines = f.readlines()

@@ -1,4 +1,4 @@
-from dataclasses import asdict, astuple, dataclass
+from dataclasses import dataclass
 
 from omegaconf import DictConfig
 
@@ -62,15 +62,3 @@ class Config(DictConfig):
     warmup_steps: int | None
     use_pseudo: bool
     refine_pseudo: bool
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def __post_init__(self):
-        self.dataset = DatasetConfig(**asdict(self.dataset))
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-    def __or__(self, other):
-        return self.__class__(**asdict(self) | asdict(other))
