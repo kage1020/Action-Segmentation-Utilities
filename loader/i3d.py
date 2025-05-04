@@ -1,7 +1,5 @@
-import threading
 from pathlib import Path
 
-import cv2
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -11,15 +9,18 @@ from torch.utils.data import DataLoader, Dataset
 from ..base import Base, get_boundaries, get_dirs
 from ..logger import Logger, log
 
-worker_info = threading.local()
-
 
 class ImageBatch(Dataset):
-    def __init__(self, image_paths: list[str] | list[Path], temporal_window: int):
+    def __init__(
+        self,
+        image_paths: list[str] | list[Path],
+        flow_paths: list[str] | list[Path],
+        temporal_window: int,
+    ):
         super(ImageBatch, self).__init__()
         self.image_paths = image_paths
+        self.flow_paths = flow_paths
         self.temporal_window = temporal_window
-        optical_flow = self._get_optical_flow()
         self.to_rgb = transforms.Compose(
             [
                 transforms.Resize((224, 224)),
@@ -37,25 +38,21 @@ class ImageBatch(Dataset):
         indices = [0] * (self.temporal_window // 2 + 1) + list(
             range(self.temporal_window // 2 + 1)
         )
-        images = [Image.open(self.image_paths[i]) for i in indices]
-        grays = [np.array(self.to_flow(im), dtype=np.uint8) for im in images]
-        flows = [
-            optical_flow.calc(grays[i], grays[i + 1], None)
-            for i in range(len(grays) - 1)
-        ]
-        flows.append(flows[-1])
         pre_images = torch.empty((self.temporal_window + 1, 3, 224, 224))
         pre_flows = torch.empty((self.temporal_window + 1, 2, 224, 224))
-        for i in range(len(images)):
-            pre_images[i] = self.to_rgb(images[i])
-            pre_flows[i] = torch.from_numpy(flows[i]).permute(2, 0, 1)
+        for i in range(len(indices)):
+            img = Image.open(self.image_paths[indices[i]])
+            pre_images[i] = self.to_rgb(img)
+
+            if i < len(indices) - 1:
+                flow = np.load(self.flow_paths[indices[i]])  # shape: (H, W, 2)
+                flow_tensor = torch.from_numpy(flow).permute(2, 0, 1)  # (2, H, W)
+                flow_tensor = transforms.functional.resize(flow_tensor, [224, 224])
+                pre_flows[i] = flow_tensor
+            else:
+                pre_flows[i] = pre_flows[i - 1]
         self.images = pre_images
         self.flows = pre_flows
-
-    def _get_optical_flow(self):
-        if not hasattr(worker_info, "optical_flow"):
-            worker_info.optical_flow = cv2.optflow_DualTVL1OpticalFlow.create()
-        return worker_info.optical_flow
 
     def __len__(self):
         return len(self.image_paths)
@@ -71,30 +68,23 @@ class ImageBatch(Dataset):
         # move window
         self.images = torch.roll(self.images, 1, 0)
         self.flows = torch.roll(self.flows, 1, 0)
-        if index >= len(self.image_paths) - self.temporal_window // 2 - 1:
+
+        next_index = index + self.temporal_window // 2 + 1
+        if next_index >= len(self.image_paths):
             self.images[-1] = self.images[-2]
             self.flows[-1] = self.flows[-2]
         else:
-            optical_flow = self._get_optical_flow()
-            self.images[-1] = self.to_rgb(
-                Image.open(self.image_paths[index + self.temporal_window // 2 + 1])
-            )
-            self.flows[-1] = torch.from_numpy(
-                optical_flow.calc(
-                    np.array(
-                        self.to_flow(self.images[-2] * 255),
-                        dtype=np.uint8,
-                    )[0],
-                    np.array(
-                        self.to_flow(self.images[-1] * 255),
-                        dtype=np.uint8,
-                    )[0],
-                    None,
-                )
-            ).permute(2, 0, 1)
-        assert (
-            len(self.images) == self.temporal_window + 1
-        ), "length of chunk should be the same as temporal window + 1"
+            img = Image.open(self.image_paths[next_index])
+            self.images[-1] = self.to_rgb(img)
+
+            flow = np.load(self.flow_paths[next_index - 1])
+            flow_tensor = torch.from_numpy(flow).permute(2, 0, 1)
+            flow_tensor = transforms.functional.resize(flow_tensor, [224, 224])
+            self.flows[-1] = flow_tensor
+
+        assert len(self.images) == self.temporal_window + 1, (
+            "length of chunk should be the same as temporal window + 1"
+        )
 
         rgb = self.images.permute(1, 0, 2, 3).unsqueeze(0)
         flows = self.flows.permute(1, 0, 2, 3).unsqueeze(0)
@@ -105,6 +95,7 @@ class I3DDataset(Dataset):
     def __init__(
         self,
         image_dir: str | Path,
+        flow_dir: str | Path,
         temporal_window: int,
         num_workers: int,
         boundary_dir: Path | None = None,
@@ -112,6 +103,7 @@ class I3DDataset(Dataset):
     ):
         super().__init__()
         self.image_dir = Path(image_dir)
+        self.flow_dir = Path(flow_dir)
         logger.info(f"Loading images from {self.image_dir} ...", end="")
         image_dirs = get_dirs(image_dir, recursive=True)
         log("Done")
@@ -143,15 +135,19 @@ class I3DDataset(Dataset):
                 self.image_dir / video_name / f"{i:06d}.jpg"
                 if f"{i:06d}.jpg" in existing_images
                 else self.image_dir / video_name / f"{i:08d}.jpg"
-                for i in range(boundary[0] - 1, boundary[1])
+                for i in range(boundary[0], boundary[1] + 1)
+            ]
+            flow_paths = [
+                self.flow_dir / video_name / f"{i:06d}.npy"
+                for i in range(boundary[0], boundary[1] + 1)
             ]
             assert len(image_paths) == boundary[1] - boundary[0] + 1
 
             video_path = self.image_dir / (
-                video_name + f"_{boundary_idx_in_video+1:02d}"
+                video_name + f"_{boundary_idx_in_video + 1:02d}"
             )
             loader = DataLoader(
-                ImageBatch(image_paths, self.temporal_window),
+                ImageBatch(image_paths, flow_paths, self.temporal_window),
                 batch_size=1,
                 num_workers=self.num_workers,
                 shuffle=False,
@@ -162,9 +158,15 @@ class I3DDataset(Dataset):
             image_paths = list(image_dir.glob("*.png"))
             image_paths += list(image_dir.glob("*.jpg"))
             image_paths.sort()
+            flow_paths = [
+                self.flow_dir
+                / image_dir.relative_to(self.image_dir).with_suffix(".npy")
+                for _ in range(len(image_paths))
+            ]
+            assert len(image_paths) == len(flow_paths)
 
             return DataLoader(
-                ImageBatch(image_paths, self.temporal_window),
+                ImageBatch(image_paths, flow_paths, self.temporal_window),
                 batch_size=1,
                 num_workers=self.num_workers,
                 shuffle=False,
@@ -175,13 +177,19 @@ class I3DDataLoader(DataLoader):
     def __init__(
         self,
         image_dir: str | Path,
+        flow_dir: str | Path,
         temporal_window: int,
         num_workers: int,
         boundary_dir: Path | None = None,
         logger: Logger | None = Base,
     ):
         dataset = I3DDataset(
-            image_dir, temporal_window, num_workers, boundary_dir, logger=logger
+            image_dir,
+            flow_dir,
+            temporal_window,
+            num_workers,
+            boundary_dir,
+            logger=logger,
         )
         super().__init__(
             dataset,

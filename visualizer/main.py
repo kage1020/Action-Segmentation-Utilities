@@ -120,11 +120,15 @@ def plot_features(
         raise ValueError("`features` must be a 3D array.")
     if isinstance(features, list) and len(features) == 0:
         raise ValueError("`features` list cannot be empty.")
-    if isinstance(features, list) and len(file_paths) != len(features):
+    if (
+        isinstance(features, list)
+        and not is_jupyter
+        and len(file_paths) != len(features)
+    ):
         raise ValueError(
             "Length of `file_paths` must match the length of `features` list."
         )
-    if isinstance(features, list) and len(file_paths) == 0:
+    if isinstance(features, list) and not is_jupyter and len(file_paths) == 0:
         raise ValueError("`file_paths` list cannot be empty.")
 
     num_features = len(features)
