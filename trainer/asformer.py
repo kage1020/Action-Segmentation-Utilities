@@ -157,6 +157,9 @@ class ASFormerTrainer(Trainer):
 
     def test(self, test_loader: BaseDataLoader):
         palette = template(len(test_loader.dataset.text_to_int), "viridis")
+        self.model.to(self.device)
+        self.model.eval()
+
         with torch.no_grad():
             for features, mask, labels, video_names in tqdm(test_loader, leave=False):
                 features = features.to(self.device)

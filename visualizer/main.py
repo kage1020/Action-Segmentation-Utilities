@@ -333,8 +333,8 @@ def plot_action_segmentation(
         fig_size = (10, fig_size[1] + 1)
 
     num_legend_rows = math.ceil(len(unique_label) / legend_ncols)
-    if num_legend_rows > 3:
-        fig_size = (fig_size[0], fig_size[1] + (num_legend_rows - 3))
+    padding_bottom = 0.2 + max(0, num_legend_rows - 3) * 0.08
+    legend_anchor_y = -0.7 - max(0, num_legend_rows - 3) * 0.07
 
     fig = plt.figure(figsize=fig_size)
     gs = fig.add_gridspec(3, 1)
@@ -354,9 +354,9 @@ def plot_action_segmentation(
         fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0)
         legend_anchor = (0.5, -0.15)
     elif (pred is not None and gt is not None) and confidences is not None:
-        fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=0.2)
+        fig.subplots_adjust(left=0.08, right=0.97, top=0.95, bottom=padding_bottom)
         bar_ax = fig.add_subplot(gs[0:2])
-        legend_anchor = (0.5, -0.7)
+        legend_anchor = (0.5, legend_anchor_y)
 
     if palette is None:
         palette = template(num_classes, "cividis")
