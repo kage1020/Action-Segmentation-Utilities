@@ -98,7 +98,7 @@ def load_model(
     _model_path = Path(model_path)
     if _model_path.exists() and _model_path.is_file():
         model.load_state_dict(
-            torch.load(model_path, map_location=device, weights_only=True),
+            torch.load(model_path, map_location=device, weights_only=strict),
             strict=strict,
         )
         logger.info(f"Model was loaded from {model_path}")
@@ -212,9 +212,9 @@ def get_class_mapping(
     has_header: bool = False,
     separator: str = " ",
 ) -> tuple[dict[str, int], dict[int, str]]:
-    assert mapping_path is not None or classes is not None, (
-        "Mapping path or classes should be provided"
-    )
+    assert (
+        mapping_path is not None or classes is not None
+    ), "Mapping path or classes should be provided"
     if mapping_path is None:
         text_to_int = {c: i for i, c in enumerate(classes)}
         int_to_text = {i: c for i, c in enumerate(classes)}
@@ -475,9 +475,9 @@ class Base:
         action1 class1,class2,class3,...
         action2 class4,class5,class6,...
         """
-        assert len(self.text_to_int) > 1, (
-            "Class mapping is not set. Please set the class mapping first by `set_class_mapping` method."
-        )
+        assert (
+            len(self.text_to_int) > 1
+        ), "Class mapping is not set. Please set the class mapping first by `set_class_mapping` method."
 
         with open(actions_path, "r") as f:
             lines = f.readlines()

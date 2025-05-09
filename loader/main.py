@@ -160,6 +160,6 @@ class BaseDataLoader(DataLoader):
         super().__init__(
             dataset=dataset,
             batch_size=cfg.dataset.batch_size,
-            shuffle=cfg.dataset.shuffle,
+            shuffle=cfg.dataset.shuffle if train else False,
             collate_fn=collate_fn,
         )

@@ -78,7 +78,7 @@ def collate_fn(batch):
     features = [rearrange(f, "c f -> f c") for f in features]
     features = pad_sequence(features, batch_first=True)
     features = rearrange(features, "b f c -> b c f")
-    target = pad_sequence(targets, batch_first=True, padding_value=-100)
+    target = pad_sequence(targets, batch_first=True, padding_value=-100) # (b c f)
     masks = torch.where(target == -100, 0, 1)
     masks = masks[:, None, :].bool()
     return features, masks, target, video_names

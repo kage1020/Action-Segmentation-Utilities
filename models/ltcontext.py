@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch import Tensor
 from torch.nn.init import constant_
+from torchtyping import TensorType
 
 
 class ScaledDotProduct(nn.Module):
@@ -151,9 +152,9 @@ class MultiHeadAttention(nn.Module):
             d = t.shape[1]
         else:
             d = t.shape[2]
-        assert d % self.dim_k == 0, (
-            f"the {name} embeddings need to be divisible by the number of heads"
-        )
+        assert (
+            d % self.dim_k == 0
+        ), f"the {name} embeddings need to be divisible by the number of heads"
 
     def _split_heads(self, tensor: Tensor) -> Tensor:
         """
@@ -667,13 +668,11 @@ class LTCModule(nn.Module):
         self.out_proj = nn.Conv1d(model_dim, num_classes, kernel_size=1, bias=True)
 
     def forward(
-        self, inputs: Tensor, masks: Tensor, prev_stage_feat: Tensor | None = None
+        self,
+        inputs: TensorType["batch", "input_dim_size", "sequence_length"],
+        masks: TensorType["batch", "sequence_length", 1],
+        prev_stage_feat: TensorType | None = None,
     ) -> tuple[Tensor, Tensor]:
-        """
-        :inputs: _description_
-        :masks: _description_
-        :prev_stage_feat (Tensor | None, optional): _description_. Defaults to None.
-        """
         inputs = self.channel_dropout(inputs)
         feature = self.input_proj(inputs)
         for layer in self.layers:
@@ -747,12 +746,11 @@ class LTC(nn.Module):
             ]
         )
 
-    def forward(self, inputs: Tensor, masks: Tensor) -> Tensor:
-        """
-        :param inputs: Tensor with shape [batch_size, input_dim_size, sequence_length]
-        :param masks: Tensor with shape [batch_size, sequence_length, 1]
-        :return: outputs: Tensor with shape [batch_size, num_classes, sequence_length]
-        """
+    def forward(
+        self,
+        inputs: TensorType["batch", "input_dim_size", "sequence_length"],
+        masks: TensorType["batch", "sequence_length", 1],
+    ) -> TensorType["batch", "num_classes", "sequence_length"]:
         out, feature = self.stage1(inputs, masks)
         output_list = [out]
         feature = self.dim_reduction(feature)
