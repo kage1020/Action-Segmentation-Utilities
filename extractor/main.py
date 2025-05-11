@@ -25,9 +25,9 @@ class Extractor(Base):
         boundary_dir: str | None = None,
     ):
         super().__init__(name="Extractor")
-        assert video_dir is not None or image_dir is not None, (
-            "video_dir or image_dir must be provided"
-        )
+        assert (
+            video_dir is not None or image_dir is not None
+        ), "video_dir or image_dir must be provided"
 
         self.out_dir = Path(out_dir)
         self.video_paths = (
@@ -49,6 +49,7 @@ class Extractor(Base):
         if self.image_dir is None:
             return
 
+        device = get_device()
         loader = I3DDataLoader(
             image_dir=self.image_dir,
             flow_dir=self.flow_dir,
@@ -65,8 +66,8 @@ class Extractor(Base):
                     continue
                 features = []
                 for rgb, flows in tqdm(batch, leave=False):
-                    rgb = rgb.to(get_device())
-                    flows = flows.to(get_device())
+                    rgb = rgb.to(device)
+                    flows = flows.to(device)
                     rgb_features = rgb_model.extract_features(rgb[0])
                     flows_features = flow_model.extract_features(flows[0])
                     features.append(

@@ -2,7 +2,6 @@ import glob
 import os
 import random
 import time
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import cv2
@@ -61,19 +60,21 @@ def log_time(seconds: float, logger: Logger = Logger()):
 
 def get_dirs(path: str | Path, recursive: bool = False) -> list[Path]:
     path = str(path)
-    dirs = [
-        os.path.join(path, d)
-        for d in os.listdir(path)
-        if os.path.isdir(os.path.join(path, d))
-    ]
+    dirs = set()
+
     if not recursive:
+        dirs = [
+            os.path.join(path, d)
+            for d in os.listdir(path)
+            if os.path.isdir(os.path.join(path, d))
+        ]
         return [Path(d) for d in dirs]
 
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        results = list(executor.map(lambda d: get_dirs(d, recursive), dirs))
-        for result in results:
-            dirs.extend(result)
-    return [Path(d) for d in dirs]
+    for path, _, files in os.walk(path):
+        if len(files) > 0:
+            dirs.add(path)
+
+    return sorted([Path(d) for d in dirs])
 
 
 def create_config(cfg: dict) -> Config:
